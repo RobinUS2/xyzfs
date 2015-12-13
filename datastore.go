@@ -19,11 +19,11 @@ func (this *Datastore) prepare() {
 func (this *Datastore) NewBlock() *Block {
 	log.Info("Allocating new block")
 
-	// Create new block
-	b := newBlock()
-
 	// @todo Improve volume allocator (e.g. random/least full)
 	volume := conf.Datastore.Volumes[0]
+
+	// Create new block
+	b := newBlock(volume)
 
 	// Register block
 	volume.RegisterBlock(b)

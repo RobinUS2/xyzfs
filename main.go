@@ -41,4 +41,8 @@ func startApplication() {
 
 	// Gossip with other nodes
 	gossip = newGossip()
+
+	// Test
+	b := datastore.NewBlock()
+	b.Persist()
 }

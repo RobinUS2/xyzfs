@@ -68,5 +68,6 @@ func (this *Volume) FullPath() string {
 func newVolume() *Volume {
 	return &Volume{
 		shards: make(map[string]*Shard),
+		blocks: make(map[string]*Block),
 	}
 }
