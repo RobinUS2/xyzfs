@@ -28,6 +28,9 @@ func (this *Volume) prepare() {
 			log.Errorf("Failed to create %s: %s", this.FullPath(), e)
 		}
 	}
+
+	// Done
+	log.Infof("Loaded volume %s", this.IdStr())
 }
 
 // Full path
