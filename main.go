@@ -27,5 +27,6 @@ func main() {
 func startApplication() {
 	conf = newConf()
 	restServer = newRestServer()
+	datastore = newDatastore()
 	gossip = newGossip()
 }

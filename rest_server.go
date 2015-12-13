@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -17,6 +16,7 @@ type RestServer struct {
 
 func (this *RestServer) start() {
 	go func() {
+		log.Info("Starting REST HTTP server")
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", conf.HttpPort), nil))
 	}()
 }

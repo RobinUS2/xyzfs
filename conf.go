@@ -13,6 +13,7 @@ type Conf struct {
 	Seeds                []string
 	DataShardsPerBlock   int
 	ParityShardsPerBlock int
+	ShardSizeInBytes     int
 }
 
 type DatastoreConf struct {
@@ -24,6 +25,7 @@ func newConf() *Conf {
 		HttpPort:             8080,
 		DataShardsPerBlock:   10,
 		ParityShardsPerBlock: 3,
+		ShardSizeInBytes:     1024 * 1024 * 32,
 		Datastore:            newDatastoreConf(),
 	}
 

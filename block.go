@@ -19,6 +19,11 @@ func (this *Block) initShards() {
 	}
 }
 
+// Persist block to disk
+func (this *Block) Persist() {
+	// @todo Implement
+}
+
 func newBlock() *Block {
 	b := &Block{
 		Id:           randomUuid(),

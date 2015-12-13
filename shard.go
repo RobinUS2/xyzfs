@@ -19,7 +19,7 @@ func (this *Shard) Contents() *bytes.Buffer {
 	// this.contentsMux.RLock()
 	// @todo read from disk
 	if this.contents == nil {
-		this.contents = bytes.NewBuffer(make([]byte, 1024*1024*32))
+		this.contents = bytes.NewBuffer(make([]byte, conf.ShardSizeInBytes))
 	}
 	// defer this.contentsMux.RUnlock()
 	return this.contents
