@@ -25,13 +25,19 @@ func (this *Datastore) NewBlock() *Block {
 	// @todo Improve volume allocator (e.g. random/least full)
 	volume := conf.Datastore.Volumes[0]
 
-	// Register with local volume
+	// Register block
+	volume.RegisterBlock(b)
+
+	// Register shards with local volume
 	for _, s := range b.DataShards {
 		volume.RegisterShard(s)
 	}
 	for _, s := range b.ParityShards {
 		volume.RegisterShard(s)
 	}
+
+	// @todo replicate shard to other host
+	// @todo store shard replication information on disk + in-memory
 
 	return b
 }

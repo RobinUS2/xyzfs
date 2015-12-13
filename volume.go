@@ -9,10 +9,16 @@ import (
 // Volume is a location on a server that points to a local data storage directory
 
 type Volume struct {
-	Id        []byte // Unique ID
-	Path      string // Path to local directory
+	Id   []byte // Unique ID
+	Path string // Path to local directory
+
+	// Shards
 	shards    map[string]*Shard
 	shardsMux sync.RWMutex
+
+	// Blocks
+	blocks    map[string]*Block
+	blocksMux sync.RWMutex
 }
 
 // To string
@@ -23,9 +29,17 @@ func (this *Volume) IdStr() string {
 // Register shard
 func (this *Volume) RegisterShard(s *Shard) {
 	this.shardsMux.Lock()
-	log.Infof("Registered block %s with volume %s", s.IdStr(), this.IdStr())
+	log.Infof("Registered shard %s with volume %s", s.IdStr(), this.IdStr())
 	this.shards[s.IdStr()] = s
 	this.shardsMux.Unlock()
+}
+
+// Register block
+func (this *Volume) RegisterBlock(b *Block) {
+	this.blocksMux.Lock()
+	log.Infof("Registered block %s with volume %s", b.IdStr(), this.IdStr())
+	this.blocks[b.IdStr()] = b
+	this.blocksMux.Unlock()
 }
 
 // Prepare
