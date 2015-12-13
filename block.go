@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Block of data in a volume
@@ -12,6 +13,7 @@ import (
 type Block struct {
 	Id           []byte // Unique ID
 	volume       *Volume
+	shardsMux    sync.RWMutex
 	DataShards   []*Shard
 	ParityShards []*Shard
 }
@@ -85,12 +87,34 @@ func (this *Block) recoverShards() {
 		if strings.Contains(elm.Name(), ".parity") {
 			// Parity
 			shard.Parity = true
-			this.ParityShards = append(this.ParityShards, shard)
+			this.RegisterParityShard(shard)
 		} else {
 			// Data
-			this.DataShards = append(this.DataShards, shard)
+			this.RegisterDataShard(shard)
 		}
 	}
+}
+
+// Register shards
+func (this *Block) RegisterDataShard(s *Shard) {
+	if s.Parity == true {
+		panic("Not a data shard")
+	}
+	this.shardsMux.Lock()
+	log.Infof("Registered data shard %s with block %s", s.IdStr(), this.IdStr())
+	this.DataShards = append(this.DataShards, s)
+	this.shardsMux.Unlock()
+}
+
+// Register shards
+func (this *Block) RegisterParityShard(s *Shard) {
+	if s.Parity == false {
+		panic("Not a parity shard")
+	}
+	this.shardsMux.Lock()
+	log.Infof("Registered parity shard %s with block %s", s.IdStr(), this.IdStr())
+	this.ParityShards = append(this.ParityShards, s)
+	this.shardsMux.Unlock()
 }
 
 // Full path

@@ -36,12 +36,21 @@ func (this *Shard) Contents() *bytes.Buffer {
 func (this *Shard) Persist() {
 	// @todo better writing to files, guaranteeing no data corruption
 	log.Infof("Persisting shard %s to disk", this.IdStr())
-	path := fmt.Sprintf("%s/s=%s.data", this.Block().FullPath(), this.IdStr())
+	path := this.FullPath()
 	err := ioutil.WriteFile(path, this.Contents().Bytes(), conf.UnixFilePermissions)
 	if err != nil {
 		// @tood handle better
 		panic(err)
 	}
+}
+
+// Full path
+func (this *Shard) FullPath() string {
+	var infix string = ""
+	if this.Parity {
+		infix = ".parity"
+	}
+	return fmt.Sprintf("%s/s=%s%s.data", this.Block().FullPath(), this.IdStr(), infix)
 }
 
 // Block
