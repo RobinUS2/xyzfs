@@ -74,6 +74,7 @@ func (this *Volume) prepare() {
 
 		// Init
 		b := newBlock(this)
+		b.Id = uuidStringToBytes(split[1])
 
 		// Recover shards
 		b.recoverShards()
