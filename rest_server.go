@@ -16,7 +16,7 @@ type RestServer struct {
 
 func (this *RestServer) start() {
 	go func() {
-		log.Info("Starting REST HTTP server")
+		log.Infof("Starting REST HTTP server on port %d", conf.HttpPort)
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", conf.HttpPort), nil))
 	}()
 }

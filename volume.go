@@ -12,16 +12,25 @@ type Volume struct {
 	Path string // Path to local directory
 }
 
+func (this *Volume) IdStr() string {
+	return uuidToString(this.Id)
+}
+
 // Prepare
 func (this *Volume) prepare() {
 	// Folder exists?
-	log.Debug("Preparing volume %s", this.Id)
+	log.Debugf("Preparing volume %s", this.IdStr())
 	if _, err := os.Stat(this.FullPath()); os.IsNotExist(err) {
-		// @todo create
+		// Create
+		log.Infof("Creating folder for volume %s in %s", this.IdStr(), this.FullPath())
+		e := os.MkdirAll(this.FullPath(), conf.UnixFolderPermissions)
+		if e != nil {
+			log.Errorf("Failed to create %s: %s", this.FullPath(), e)
+		}
 	}
 }
 
 // Full path
 func (this *Volume) FullPath() string {
-	return fmt.Sprintf("%s/v=%s", this.Path, this.Id)
+	return fmt.Sprintf("%s/v=%s", this.Path, this.IdStr())
 }

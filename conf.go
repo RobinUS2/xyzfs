@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 )
 
@@ -8,12 +9,13 @@ var conf *Conf
 var confSeedFlag string
 
 type Conf struct {
-	HttpPort             int
-	Datastore            *DatastoreConf
-	Seeds                []string
-	DataShardsPerBlock   int
-	ParityShardsPerBlock int
-	ShardSizeInBytes     int
+	HttpPort              int
+	Datastore             *DatastoreConf
+	Seeds                 []string
+	DataShardsPerBlock    int
+	ParityShardsPerBlock  int
+	ShardSizeInBytes      int
+	UnixFolderPermissions os.FileMode
 }
 
 type DatastoreConf struct {
@@ -22,11 +24,12 @@ type DatastoreConf struct {
 
 func newConf() *Conf {
 	c := &Conf{
-		HttpPort:             8080,
-		DataShardsPerBlock:   10,
-		ParityShardsPerBlock: 3,
-		ShardSizeInBytes:     1024 * 1024 * 32,
-		Datastore:            newDatastoreConf(),
+		HttpPort:              8080,
+		DataShardsPerBlock:    10,
+		ParityShardsPerBlock:  3,
+		UnixFolderPermissions: 0655,
+		ShardSizeInBytes:      1024 * 1024 * 32,
+		Datastore:             newDatastoreConf(),
 	}
 
 	if len(confSeedFlag) > 0 {
@@ -38,7 +41,10 @@ func newConf() *Conf {
 
 func newDatastoreConf() *DatastoreConf {
 	d := make([]*Volume, 0)
-	d = append(d, &Volume{Path: "/xyzfs/data"})
+	d = append(d, &Volume{
+		Path: "/xyzfs/data",
+		Id:   randomUuid(),
+	})
 
 	return &DatastoreConf{
 		Volumes: d,
