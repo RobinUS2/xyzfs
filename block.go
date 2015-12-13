@@ -4,6 +4,7 @@ package main
 
 type Block struct {
 	Id           []byte // Unique ID
+	volume       *Volume
 	DataShards   []*Shard
 	ParityShards []*Shard
 }
@@ -19,8 +20,14 @@ func (this *Block) initShards() {
 	}
 }
 
+// To string
+func (this *Block) IdStr() string {
+	return uuidToString(this.Id)
+}
+
 // Persist block to disk
 func (this *Block) Persist() {
+	log.Infof("Persisting block %s to disk", this.IdStr())
 	// @todo Implement
 }
 

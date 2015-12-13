@@ -54,10 +54,10 @@ func newDatastoreConf() *DatastoreConf {
 
 	// Default volume?
 	if len(d) == 0 {
-		d = append(d, &Volume{
-			Path: conf.VolumeBasePath,
-			Id:   randomUuid(),
-		})
+		v := newVolume()
+		v.Id = randomUuid()
+		v.Path = conf.VolumeBasePath
+		d = append(d, v)
 	}
 
 	return &DatastoreConf{
@@ -85,10 +85,10 @@ func recoverVolumeConfiguration() []*Volume {
 		}
 
 		// Init
-		d = append(d, &Volume{
-			Path: conf.VolumeBasePath,
-			Id:   uuidStringToBytes(split[1]),
-		})
+		v := newVolume()
+		v.Id = uuidStringToBytes(split[1])
+		v.Path = conf.VolumeBasePath
+		d = append(d, v)
 	}
 	return d
 }

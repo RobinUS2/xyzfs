@@ -3,17 +3,29 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 )
 
 // Volume is a location on a server that points to a local data storage directory
 
 type Volume struct {
-	Id   []byte // Unique ID
-	Path string // Path to local directory
+	Id        []byte // Unique ID
+	Path      string // Path to local directory
+	blocks    map[string]*Block
+	blocksMux sync.RWMutex
 }
 
+// To string
 func (this *Volume) IdStr() string {
 	return uuidToString(this.Id)
+}
+
+// Register block
+func (this *Volume) RegisterBlock(b *Block) {
+	this.blocksMux.Lock()
+	log.Infof("Registered block %s with volume %s", b.IdStr(), this.IdStr())
+	this.blocks[b.IdStr()] = b
+	this.blocksMux.Unlock()
 }
 
 // Prepare
@@ -36,4 +48,11 @@ func (this *Volume) prepare() {
 // Full path
 func (this *Volume) FullPath() string {
 	return fmt.Sprintf("%s/v=%s", this.Path, this.IdStr())
+}
+
+// New volume
+func newVolume() *Volume {
+	return &Volume{
+		blocks: make(map[string]*Block),
+	}
 }

@@ -5,8 +5,8 @@ import (
 )
 
 func TestNewBlock(t *testing.T) {
-	// Create
-	b := newBlock()
+	// Register on volume
+	b := datastore.NewBlock()
 
 	// Persist
 	b.Persist()
