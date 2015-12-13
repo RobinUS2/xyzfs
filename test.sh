@@ -4,7 +4,7 @@
 source build.sh -race
 
 # Run tests
-go test .
+go test -v .
 
 # Run vet
 go vet .
