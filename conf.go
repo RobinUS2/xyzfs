@@ -8,9 +8,11 @@ var conf *Conf
 var confSeedFlag string
 
 type Conf struct {
-	HttpPort  int
-	Datastore *DatastoreConf
-	Seeds     []string
+	HttpPort             int
+	Datastore            *DatastoreConf
+	Seeds                []string
+	DataShardsPerBlock   int
+	ParityShardsPerBlock int
 }
 
 type DatastoreConf struct {
@@ -19,8 +21,10 @@ type DatastoreConf struct {
 
 func newConf() *Conf {
 	c := &Conf{
-		HttpPort:  8080,
-		Datastore: newDatastoreConf(),
+		HttpPort:             8080,
+		DataShardsPerBlock:   10,
+		ParityShardsPerBlock: 3,
+		Datastore:            newDatastoreConf(),
 	}
 
 	if len(confSeedFlag) > 0 {

@@ -18,8 +18,14 @@ func init() {
 }
 
 func main() {
+	startApplication()
+
+	// Wait for shutdown
+	<-shutdown
+}
+
+func startApplication() {
 	conf = newConf()
 	restServer = newRestServer()
 	gossip = newGossip()
-	<-shutdown
 }
