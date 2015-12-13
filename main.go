@@ -25,6 +25,8 @@ func main() {
 }
 
 func startApplication() {
+	log.Info("Starting xyzFS")
+
 	// Basic config
 	conf = newConf()
 
