@@ -14,11 +14,7 @@ type Conf struct {
 }
 
 type DatastoreConf struct {
-	Volumes []*DatastoreDirectory
-}
-
-type DatastoreDirectory struct {
-	Path string
+	Volumes []*Volume
 }
 
 func newConf() *Conf {
@@ -35,8 +31,8 @@ func newConf() *Conf {
 }
 
 func newDatastoreConf() *DatastoreConf {
-	d := make([]*DatastoreDirectory, 0)
-	d = append(d, &DatastoreDirectory{Path: "/xyzfs/data"})
+	d := make([]*Volume, 0)
+	d = append(d, &Volume{Path: "/xyzfs/data"})
 
 	return &DatastoreConf{
 		Volumes: d,
