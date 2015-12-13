@@ -1,3 +1,10 @@
 #!/bin/bash
-source build.sh
+
+# Build
+source build.sh -race
+
+# Run tests
 go test .
+
+# Run vet
+go vet .
