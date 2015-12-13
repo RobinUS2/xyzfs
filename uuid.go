@@ -16,3 +16,11 @@ func uuidToString(b []byte) string {
 	}
 	return u.String()
 }
+
+func uuidStringToBytes(s string) []byte {
+	u := uuid.FromStringOrNil(s)
+	if u == uuid.Nil {
+		return make([]byte, 0)
+	}
+	return u.Bytes()
+}

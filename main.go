@@ -25,8 +25,18 @@ func main() {
 }
 
 func startApplication() {
+	// Basic config
 	conf = newConf()
-	restServer = newRestServer()
+
+	// Data store config
+	conf.Datastore = newDatastoreConf()
+
+	// Datatastore
 	datastore = newDatastore()
+
+	// HTTP server
+	restServer = newRestServer()
+
+	// Gossip with other nodes
 	gossip = newGossip()
 }
