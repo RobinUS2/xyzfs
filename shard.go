@@ -8,6 +8,7 @@ import (
 )
 
 // Shard is a partial piece of data in a block
+// @todo Store CRC32 checksum in meta file to validate content of shard
 
 type Shard struct {
 	Id     []byte // Unique UUID
