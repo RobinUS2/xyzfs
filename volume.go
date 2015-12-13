@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -53,6 +55,31 @@ func (this *Volume) prepare() {
 		if e != nil {
 			log.Errorf("Failed to create %s: %s", this.FullPath(), e)
 		}
+	}
+
+	// Recover blocks
+	list, e := ioutil.ReadDir(this.FullPath())
+	if e != nil {
+		log.Errorf("Failed to list blocks in %s: %s", this.FullPath(), e)
+		return
+	}
+
+	// Iterate
+	for _, elm := range list {
+		split := strings.Split(elm.Name(), "=")
+		// Must be in format b=UUID
+		if len(split) != 2 || split[0] != "b" {
+			continue
+		}
+
+		// Init
+		b := newBlock(this)
+
+		// Recover shards
+		b.recoverShards()
+
+		// Register
+		this.RegisterBlock(b)
 	}
 
 	// Done

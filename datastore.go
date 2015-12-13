@@ -25,6 +25,9 @@ func (this *Datastore) NewBlock() *Block {
 	// Create new block
 	b := newBlock(volume)
 
+	// Init shards
+	b.initShards()
+
 	// Register block
 	volume.RegisterBlock(b)
 

@@ -10,11 +10,15 @@ import (
 // Shard is a partial piece of data in a block
 
 type Shard struct {
-	Id          []byte // Unique UUID
-	block       *Block
+	Id     []byte // Unique UUID
+	Parity bool   // Is this real data or parity?
+
+	// Block reference
+	block *Block
+
+	// Byte buffers
 	contents    *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
 	contentsMux sync.RWMutex
-	Parity      bool // Is this real data or parity?
 }
 
 // Read contents

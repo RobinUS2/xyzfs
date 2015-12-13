@@ -58,6 +58,11 @@ func (this *Block) Persist() {
 	}
 }
 
+// Recover shards
+func (this *Block) recoverShards() {
+	// @todo
+}
+
 // Full path
 func (this *Block) FullPath() string {
 	return fmt.Sprintf("%s/b=%s", this.Volume().FullPath(), this.IdStr())
