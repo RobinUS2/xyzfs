@@ -25,6 +25,11 @@ func (this *Shard) Contents() *bytes.Buffer {
 	return this.contents
 }
 
+// To string
+func (this *Shard) IdStr() string {
+	return uuidToString(this.Id)
+}
+
 // Set contents
 func (this *Shard) SetContents(b *bytes.Buffer) {
 	this.contentsMux.Lock()

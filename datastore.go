@@ -25,8 +25,13 @@ func (this *Datastore) NewBlock() *Block {
 	// @todo Improve volume allocator (e.g. random/least full)
 	volume := conf.Datastore.Volumes[0]
 
-	// Register with volume
-	volume.RegisterBlock(b)
+	// Register with local volume
+	for _, s := range b.DataShards {
+		volume.RegisterShard(s)
+	}
+	for _, s := range b.ParityShards {
+		volume.RegisterShard(s)
+	}
 
 	return b
 }
