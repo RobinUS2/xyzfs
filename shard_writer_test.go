@@ -54,4 +54,14 @@ func TestNewFile(t *testing.T) {
 		panic("Shard should contain 2 files")
 	}
 
+	// Validate shard index
+	if shard.shardIndex.Test("/non-existing") == true {
+		panic("Shard index false positive")
+	}
+	if shard.shardIndex.Test(fileMeta.FullName) == false {
+		panic("Shard index does not contain file 1")
+	}
+	if shard.shardIndex.Test(fileMeta2.FullName) == false {
+		panic("Shard index does not contain file 2")
+	}
 }
