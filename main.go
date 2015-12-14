@@ -43,6 +43,6 @@ func startApplication() {
 	gossip = newGossip()
 
 	// Test
-	b := datastore.NewBlock()
-	b.Persist()
+	// b := datastore.NewBlock()
+	// b.Persist()
 }

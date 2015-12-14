@@ -2,7 +2,7 @@ package main
 
 // Byte writer to a shard
 
-func (this *Shard) AddFile(f *FileMeta, b []byte) {
+func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	// Validate mode
 	this.bufferModeMux.Lock()
 	if this.bufferMode == ReadShardBufferMode {
@@ -12,6 +12,22 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) {
 	this.bufferMode = WriteShardBufferMode
 	this.bufferModeMux.Unlock()
 
+	// Calculate length
+	fileLen := uint32(len(b))
+
+	// Acquire write lock
+	this.contentsMux.Lock()
+
+	// Update metadata
+	f.Size = fileLen
+	f.StartOffset = this.contentsOffset
+
+	// Write contents to buffer
+	this.contents.Write(b)
+
+	// Unlock write
+	this.contentsMux.Unlock()
+
 	// Append meta
 	this.fileMetaMux.Lock()
 	if this.fileMeta == nil {
@@ -20,5 +36,6 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) {
 	this.fileMeta = append(this.fileMeta, f)
 	this.fileMetaMux.Unlock()
 
-	// Write contents to buffer
+	// Done
+	return f, nil
 }

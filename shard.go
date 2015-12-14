@@ -22,10 +22,11 @@ type Shard struct {
 	bufferModeMux sync.RWMutex
 
 	// Byte buffers
-	// - ON READ: contents + metadata
+	// - ON READ: contents + metadata + bloom filter index
 	// - ON WRITE (before flush): contains content
-	contents    *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
-	contentsMux sync.RWMutex
+	contents       *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
+	contentsMux    sync.RWMutex
+	contentsOffset uint32
 
 	// Metadata, recovered from byte buffers on disk
 	fileMeta    []*FileMeta
