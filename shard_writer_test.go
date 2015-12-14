@@ -22,17 +22,17 @@ func TestNewFile(t *testing.T) {
 	updatedFileMeta, err := shard.AddFile(fileMeta, fileBytes)
 	// No errors
 	if err != nil {
-		panic("Failed to add file")
+		t.Error("Failed to add file")
 	}
 
 	// Validate size
 	if updatedFileMeta.Size != uint32(len(fileBytes)) {
-		panic("Failed size validation")
+		t.Error("Failed size validation")
 	}
 
 	// Validate offset (first file in test)
 	if updatedFileMeta.StartOffset != 0 {
-		panic("Start offset must be 0 for first file")
+		t.Error("Start offset must be 0 for first file")
 	}
 
 	// == SECOND FILE ==
@@ -42,26 +42,28 @@ func TestNewFile(t *testing.T) {
 
 	// Add another file
 	updatedFileMeta2, err2 := shard.AddFile(fileMeta2, fileBytes2)
-	panicErr(err2)
+	if err2 != nil {
+		t.Error(err2)
+	}
 
 	// Offset of file 2 should be after file 1
 	if updatedFileMeta2.StartOffset != uint32(len(fileBytes)) {
-		panic("Should start after file 1")
+		t.Error("Should start after file 1")
 	}
 
 	// Validate shard meta
 	if shard.FileCount() != 2 {
-		panic("Shard should contain 2 files")
+		t.Error("Shard should contain 2 files")
 	}
 
 	// Validate shard index
 	if shard.shardIndex.Test("/non-existing") == true {
-		panic("Shard index false positive")
+		t.Error("Shard index false positive")
 	}
 	if shard.shardIndex.Test(fileMeta.FullName) == false {
-		panic("Shard index does not contain file 1")
+		t.Error("Shard index does not contain file 1")
 	}
 	if shard.shardIndex.Test(fileMeta2.FullName) == false {
-		panic("Shard index does not contain file 2")
+		t.Error("Shard index does not contain file 2")
 	}
 }
