@@ -32,6 +32,6 @@ func (this *ShardIndex) Test(fullName string) bool {
 
 func newShardIndex() *ShardIndex {
 	return &ShardIndex{
-		bloomFilter: bloom.New(1000000, 7),
+		bloomFilter: bloom.New(9585059, 7), // 1% error rate for 1MM items
 	}
 }
