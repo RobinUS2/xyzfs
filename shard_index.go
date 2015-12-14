@@ -40,7 +40,7 @@ func (this *ShardIndex) Bytes() []byte {
 }
 
 // From bytes
-func (this *ShardIndex) LoadBytes(b []byte) {
+func (this *ShardIndex) FromBytes(b []byte) {
 	this.mux.Lock()
 	e := this.bloomFilter.GobDecode(b)
 	panicErr(e)

@@ -33,7 +33,7 @@ func TestShardIndex(t *testing.T) {
 	}
 
 	// Populate from bytes
-	idx2.LoadBytes(idxB)
+	idx2.FromBytes(idxB)
 
 	// Should now be in there
 	if idx2.Test("test") == false {
