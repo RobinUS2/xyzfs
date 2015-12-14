@@ -1,2 +1,2 @@
-# xyzfs
-Distributed file system
+# xyzFS
+Distributed file system. Meant for educational & training purposes.
