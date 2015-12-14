@@ -22,15 +22,21 @@ type Shard struct {
 	bufferModeMux sync.RWMutex
 
 	// Byte buffers
-	// - ON READ: contents + metadata + bloom filter index
+	// - ON READ: contents + file metadata + shard index + shard metadata
 	// - ON WRITE (before flush): contains content
 	contents       *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
 	contentsMux    sync.RWMutex
 	contentsOffset uint32
 
-	// Metadata, recovered from byte buffers on disk
+	// File metadata, recovered from byte buffers on disk
 	fileMeta    []*FileMeta
 	fileMetaMux sync.RWMutex
+
+	// Shard meta
+	shardMeta *ShardMeta
+
+	// Shard index
+	shardIndex *ShardIndex
 }
 
 // Buffer mode
@@ -92,9 +98,11 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 
 func newShard(b *Block) *Shard {
 	return &Shard{
-		contents: nil,
-		Id:       randomUuid(),
-		block:    b,
-		Parity:   false,
+		contents:   nil,
+		Id:         randomUuid(),
+		block:      b,
+		Parity:     false,
+		shardMeta:  newShardMeta(),
+		shardIndex: newShardIndex(),
 	}
 }

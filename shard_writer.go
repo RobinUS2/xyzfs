@@ -39,8 +39,14 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	this.fileMeta = append(this.fileMeta, f)
 	this.fileMetaMux.Unlock()
 
+	// Update metadata
+	this.shardMeta.mux.Lock()
+	this.shardMeta.FileCount++
+	newCount := this.shardMeta.FileCount
+	this.shardMeta.mux.Unlock()
+
 	// Log
-	log.Infof("Created file %s with size %d", f.FullName, f.Size)
+	log.Infof("Created file %s with size %d in shard %s, now contains %d file(s)", f.FullName, f.Size, this.IdStr(), newCount)
 
 	// Done
 	return f, nil

@@ -49,4 +49,9 @@ func TestNewFile(t *testing.T) {
 		panic("Should start after file 1")
 	}
 
+	// Validate shard meta
+	if shard.FileCount() != 2 {
+		panic("Shard should contain 2 files")
+	}
+
 }
