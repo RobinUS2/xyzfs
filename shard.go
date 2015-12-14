@@ -17,10 +17,29 @@ type Shard struct {
 	// Block reference
 	block *Block
 
+	// Buffer mode
+	bufferMode    ShardBufferMode
+	bufferModeMux sync.RWMutex
+
 	// Byte buffers
+	// - ON READ: contents + metadata
+	// - ON WRITE (before flush): contains content
 	contents    *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
 	contentsMux sync.RWMutex
+
+	// Metadata, recovered from byte buffers on disk
+	fileMeta    []*FileMeta
+	fileMetaMux sync.RWMutex
 }
+
+// Buffer mode
+type ShardBufferMode uint
+
+const (
+	IdleShardBufferMode  ShardBufferMode = iota // 0
+	ReadShardBufferMode                         // 1
+	WriteShardBufferMode                        // 2
+)
 
 // Read contents
 func (this *Shard) Contents() *bytes.Buffer {
