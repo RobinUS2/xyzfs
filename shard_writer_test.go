@@ -5,6 +5,8 @@ import (
 )
 
 func TestNewFile(t *testing.T) {
+	startApplication()
+
 	// Register on volume
 	b := datastore.NewBlock()
 
@@ -17,7 +19,6 @@ func TestNewFile(t *testing.T) {
 
 	// Add file
 	updatedFileMeta, err := shard.AddFile(fileMeta, fileBytes)
-
 	// No errors
 	if err != nil {
 		panic("Failed to add file")

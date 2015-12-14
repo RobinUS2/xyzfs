@@ -23,7 +23,10 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	f.StartOffset = this.contentsOffset
 
 	// Write contents to buffer
-	this.contents.Write(b)
+	this.Contents().Write(b)
+
+	// Update content offset
+	this.contentsOffset += f.Size
 
 	// Unlock write
 	this.contentsMux.Unlock()
@@ -35,6 +38,9 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	}
 	this.fileMeta = append(this.fileMeta, f)
 	this.fileMetaMux.Unlock()
+
+	// Log
+	log.Infof("Created file %s with size %d", f.FullName, f.Size)
 
 	// Done
 	return f, nil

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"sync"
 )
 
 // no master
@@ -24,25 +25,25 @@ func main() {
 	<-shutdown
 }
 
+var startApplicationOnce sync.Once
+
 func startApplication() {
-	log.Info("Starting xyzFS")
+	startApplicationOnce.Do(func() {
+		log.Info("Starting xyzFS")
 
-	// Basic config
-	conf = newConf()
+		// Basic config
+		conf = newConf()
 
-	// Data store config
-	conf.Datastore = newDatastoreConf()
+		// Data store config
+		conf.Datastore = newDatastoreConf()
 
-	// Datatastore
-	datastore = newDatastore()
+		// Datatastore
+		datastore = newDatastore()
 
-	// HTTP server
-	restServer = newRestServer()
+		// HTTP server
+		restServer = newRestServer()
 
-	// Gossip with other nodes
-	gossip = newGossip()
-
-	// Test
-	// b := datastore.NewBlock()
-	// b.Persist()
+		// Gossip with other nodes
+		gossip = newGossip()
+	})
 }

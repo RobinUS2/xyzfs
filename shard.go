@@ -43,13 +43,12 @@ const (
 )
 
 // Read contents
+// - locking should be done in the buffer itself
 func (this *Shard) Contents() *bytes.Buffer {
-	// this.contentsMux.RLock()
 	// @todo read from disk
 	if this.contents == nil {
 		this.contents = bytes.NewBuffer(make([]byte, conf.ShardSizeInBytes))
 	}
-	// defer this.contentsMux.RUnlock()
 	return this.contents
 }
 
@@ -71,7 +70,7 @@ func (this *Shard) FullPath() string {
 	if this.Parity {
 		infix = ".parity"
 	}
-	return fmt.Sprintf("%s/s=%s%s.data", this.Block().FullPath(), this.IdStr(), infix)
+	return fmt.Sprintf("%s/s_%s%s.data", this.Block().FullPath(), this.IdStr(), infix)
 }
 
 // Block

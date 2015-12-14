@@ -30,8 +30,8 @@ func newConf() *Conf {
 		HttpPort:              8080,
 		DataShardsPerBlock:    10,
 		ParityShardsPerBlock:  3,
-		UnixFolderPermissions: 0644,
-		UnixFilePermissions:   0644,
+		UnixFolderPermissions: 0655,
+		UnixFilePermissions:   0655,
 		ShardSizeInBytes:      1024 * 1024 * 32,
 		VolumeBasePath:        "/xyzfs/data",
 	}

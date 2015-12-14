@@ -66,8 +66,8 @@ func (this *Volume) prepare() {
 
 	// Iterate
 	for _, elm := range list {
-		split := strings.Split(elm.Name(), "=")
-		// Must be in format b=UUID
+		split := strings.Split(elm.Name(), "_")
+		// Must be in format b_UUID
 		if len(split) != 2 || split[0] != "b" {
 			continue
 		}
@@ -89,7 +89,7 @@ func (this *Volume) prepare() {
 
 // Full path
 func (this *Volume) FullPath() string {
-	return fmt.Sprintf("%s/v=%s", this.Path, this.IdStr())
+	return fmt.Sprintf("%s/v_%s", this.Path, this.IdStr())
 }
 
 // New volume

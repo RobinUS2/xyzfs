@@ -72,8 +72,8 @@ func (this *Block) recoverShards() {
 
 	// Iterate
 	for _, elm := range list {
-		split := strings.Split(elm.Name(), "=")
-		// Must be in format s=UUID
+		split := strings.Split(elm.Name(), "_")
+		// Must be in format s_UUID
 		if len(split) != 2 || split[0] != "s" {
 			continue
 		}
@@ -119,7 +119,7 @@ func (this *Block) RegisterParityShard(s *Shard) {
 
 // Full path
 func (this *Block) FullPath() string {
-	return fmt.Sprintf("%s/b=%s", this.Volume().FullPath(), this.IdStr())
+	return fmt.Sprintf("%s/b_%s", this.Volume().FullPath(), this.IdStr())
 }
 
 func newBlock(v *Volume) *Block {

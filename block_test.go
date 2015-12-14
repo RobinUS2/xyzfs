@@ -5,6 +5,8 @@ import (
 )
 
 func TestNewBlock(t *testing.T) {
+	startApplication()
+
 	// Register on volume
 	b := datastore.NewBlock()
 
