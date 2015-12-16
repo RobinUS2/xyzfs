@@ -42,7 +42,7 @@ func (this *Shard) _toBinaryFormat() []byte {
 	b = nil
 
 	// Shard meta
-	log.Infof("%v", this.shardMeta.Bytes())
+	log.Debugf("Writing shard meta %v", this.shardMeta.Bytes())
 	buf.Write(this.shardMeta.Bytes())
 
 	// Unlock
@@ -83,8 +83,30 @@ func (this *Shard) _fromBinaryFormat() {
 	log.Debugf("Read %d metadata bytes: %v", metaBytesRead, metaBytes)
 	this.shardMeta = newShardMeta()
 	this.shardMeta.FromBytes(metaBytes)
+	metaBytes = nil
 	if this.shardMeta.MetaVersion < 1 {
 		panic("Failed to read metadata, could not find version")
 	}
-	log.Infof("Metadata: %v", this.shardMeta)
+	log.Debugf("Metadata: %v", this.shardMeta)
+
+	// Read index
+	f.Seek(flen-int64(metadataLength)-int64(this.shardMeta.IndexLength), 0)
+	buf = bufio.NewReader(f)
+	indexBytes := make([]byte, int(this.shardMeta.IndexLength))
+	indexBytesRead, _ := buf.Read(indexBytes)
+	if indexBytesRead != len(indexBytes) || metaBytesRead < 1 {
+		panic("Failed to read index bytes")
+	}
+	log.Debugf("Read %d index bytes", indexBytesRead)
+	this.shardIndex = newShardIndex()
+	this.shardIndex.FromBytes(indexBytes)
+	indexBytes = nil
+	if this.shardIndex.bloomFilter == nil {
+		panic("Bloom filter is nil")
+	}
+	log.Debugf("Shard index %v", this.shardIndex)
+
+	// @todo read file meta
+
+	// @todo read contents
 }
