@@ -14,8 +14,9 @@ func TestShardMeta(t *testing.T) {
 
 	// To bytes
 	b := meta.Bytes()
-	if len(b) != 4 {
-		t.Error("Meta should be 4 bytes")
+	expectedMetaLength := 8
+	if len(b) != expectedMetaLength {
+		t.Errorf("Meta should be %d bytes", expectedMetaLength)
 	}
 
 	// New meta

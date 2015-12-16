@@ -9,8 +9,11 @@ import (
 // Metadata on a shard
 
 type ShardMeta struct {
-	mux       sync.RWMutex
-	FileCount uint32
+	MetaVersion uint32
+	FileCount   uint32
+
+	// Lock
+	mux sync.RWMutex
 }
 
 // File count
@@ -25,6 +28,7 @@ func (this *ShardMeta) Bytes() []byte {
 	this.mux.RLock()
 	defer this.mux.RUnlock()
 	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, this.MetaVersion)
 	binary.Write(buf, binary.BigEndian, this.FileCount)
 	return buf.Bytes()
 }
@@ -32,10 +36,24 @@ func (this *ShardMeta) Bytes() []byte {
 // From bytes
 func (this *ShardMeta) FromBytes(b []byte) {
 	buf := bytes.NewReader(b)
-	err := binary.Read(buf, binary.BigEndian, &this.FileCount)
+	var err error
+	err = binary.Read(buf, binary.BigEndian, &this.MetaVersion)
+	panicErr(err)
+	err = binary.Read(buf, binary.BigEndian, &this.FileCount)
 	panicErr(err)
 }
 
+// Version
+const BINARY_VERSION uint32 = 1
+
+// New metadata
 func newShardMeta() *ShardMeta {
-	return &ShardMeta{}
+	return &ShardMeta{
+		FileCount:   0,
+		MetaVersion: BINARY_VERSION,
+	}
 }
+
+// Binary file format description
+// uint32 - Meta Version - Numeric incremental ID that indicates the version of this file
+// uint32 - FileCount - Number of files in this shard
