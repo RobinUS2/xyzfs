@@ -11,9 +11,11 @@ import (
 // Block of data in a volume
 
 type Block struct {
-	Id           []byte // Unique ID
-	volume       *Volume
-	shardsMux    sync.RWMutex
+	Id        []byte // Unique ID
+	volume    *Volume
+	shardsMux sync.RWMutex
+
+	// these must be an array to preserve the order
 	DataShards   []*Shard
 	ParityShards []*Shard
 }
@@ -22,10 +24,12 @@ type Block struct {
 func (this *Block) initShards() {
 	for i := 0; i < conf.DataShardsPerBlock; i++ {
 		this.DataShards[i] = newShard(this)
+		this.DataShards[i].BlockIndex = uint(i)
 	}
 	for i := 0; i < conf.ParityShardsPerBlock; i++ {
 		this.ParityShards[i] = newShard(this)
 		this.ParityShards[i].Parity = true
+		this.ParityShards[i].BlockIndex = uint(i + conf.DataShardsPerBlock)
 	}
 }
 

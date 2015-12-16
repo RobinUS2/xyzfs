@@ -11,8 +11,9 @@ import (
 // @todo Store CRC32 checksum in meta file to validate content of shard
 
 type Shard struct {
-	Id     []byte // Unique UUID
-	Parity bool   // Is this real data or parity?
+	Id         []byte // Unique UUID
+	BlockIndex uint   // Numeric index (from to 0 to number_of_data_shards+number_of_parity_shards), used to align the shards before a restore using Reed Solomon
+	Parity     bool   // Is this real data or parity?
 
 	// Block reference
 	block *Block
