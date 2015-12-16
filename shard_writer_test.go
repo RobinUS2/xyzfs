@@ -66,4 +66,20 @@ func TestNewFile(t *testing.T) {
 	if shard.shardIndex.Test(fileMeta2.FullName) == false {
 		t.Error("Shard index does not contain file 2")
 	}
+
+	// Validate shard meta (de)serialization
+	shardFileMetaBytes := shard.shardFileMeta.Bytes()
+	if len(shardFileMetaBytes) < 1 {
+		panic("Shard file meta bytes must be non-zero")
+	}
+
+	// Load these bytes into new to confirm it's still intact
+	newShardFileMetaInstance := newShardFileMeta()
+	if len(newShardFileMetaInstance.fileMeta) != 0 {
+		panic("Empty shard file meta must be empty")
+	}
+	newShardFileMetaInstance.FromBytes(shardFileMetaBytes)
+	if len(newShardFileMetaInstance.fileMeta) != 2 {
+		panic("Loaded shard file meta must be 2")
+	}
 }

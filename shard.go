@@ -30,9 +30,7 @@ type Shard struct {
 	contentsOffset uint32
 
 	// File metadata, recovered from byte buffers on disk
-	// @todo the FileMeta array should be a struct which implements the Bytes() and FromBytes() like ShardMeta and ShardIndex
-	fileMeta    []*FileMeta
-	fileMetaMux sync.RWMutex
+	shardFileMeta *ShardFileMeta
 
 	// Shard meta
 	shardMeta *ShardMeta
@@ -102,11 +100,12 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 
 func newShard(b *Block) *Shard {
 	return &Shard{
-		contents:   nil,
-		Id:         randomUuid(),
-		block:      b,
-		Parity:     false,
-		shardMeta:  newShardMeta(),
-		shardIndex: newShardIndex(),
+		contents:      nil,
+		Id:            randomUuid(),
+		block:         b,
+		Parity:        false,
+		shardMeta:     newShardMeta(),
+		shardIndex:    newShardIndex(),
+		shardFileMeta: newShardFileMeta(),
 	}
 }

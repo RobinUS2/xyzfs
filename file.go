@@ -14,6 +14,8 @@ type FileMeta struct {
 	StartOffset uint32 // Offset in bytes to start reading contents
 }
 
+// @Todo Bytes() and FromBytes() methods
+
 // New file meta
 func newFileMeta(name string) *FileMeta {
 	return &FileMeta{

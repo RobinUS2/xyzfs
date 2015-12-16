@@ -32,12 +32,7 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	this.contentsMux.Unlock()
 
 	// Append meta
-	this.fileMetaMux.Lock()
-	if this.fileMeta == nil {
-		this.fileMeta = make([]*FileMeta, 0)
-	}
-	this.fileMeta = append(this.fileMeta, f)
-	this.fileMetaMux.Unlock()
+	this.shardFileMeta.Add(f)
 
 	// Update metadata
 	this.shardMeta.mux.Lock()
