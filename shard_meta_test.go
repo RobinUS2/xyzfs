@@ -14,9 +14,9 @@ func TestShardMeta(t *testing.T) {
 
 	// To bytes
 	b := meta.Bytes()
-	expectedMetaLength := 12 // do not use BINARY_METADATA_LENGTH as we need to use this test to verify it is still intact
+	expectedMetaLength := 15 // do not use BINARY_METADATA_LENGTH as we need to use this test to verify it is still intact
 	if len(b) != expectedMetaLength {
-		t.Errorf("Meta should be %d bytes", expectedMetaLength)
+		t.Errorf("Meta should be %d bytes was %d", expectedMetaLength, len(b))
 	}
 
 	// New meta
