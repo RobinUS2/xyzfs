@@ -49,8 +49,8 @@ const BINARY_VERSION uint32 = 1
 // New metadata
 func newShardMeta() *ShardMeta {
 	return &ShardMeta{
-		FileCount:   0,
 		MetaVersion: BINARY_VERSION,
+		FileCount:   0,
 	}
 }
 
