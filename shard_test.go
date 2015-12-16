@@ -82,4 +82,16 @@ func TestNewFile(t *testing.T) {
 	if len(newShardFileMetaInstance.fileMeta) != 2 {
 		panic("Loaded shard file meta must be 2")
 	}
+
+	// Persist shard to disk
+	shard.Persist()
+
+	// Reset pointers in this shard
+	shard.contents = nil
+	shard.shardIndex = nil
+	shard.shardMeta = nil
+	shard.shardFileMeta = nil
+
+	// Read from disk
+	shard.Load()
 }

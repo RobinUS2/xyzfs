@@ -48,6 +48,21 @@ func (this *Block) Persist() {
 	log.Infof("Persisting block %s to disk", this.IdStr())
 
 	// Prepare folder
+	this.PrepareFolder()
+
+	// Shards to disk
+	for _, shard := range this.DataShards {
+		shard.Persist()
+	}
+	for _, shard := range this.ParityShards {
+		shard.Persist()
+	}
+}
+
+// Prepare folder
+func (this *Block) PrepareFolder() {
+	// @todo cache only once
+	// Prepare folder
 	if _, err := os.Stat(this.FullPath()); os.IsNotExist(err) {
 		// Create
 		log.Infof("Creating folder for block %s in %s", this.IdStr(), this.FullPath())
@@ -55,14 +70,6 @@ func (this *Block) Persist() {
 		if e != nil {
 			log.Errorf("Failed to create %s: %s", this.FullPath(), e)
 		}
-	}
-
-	// Shards
-	for _, shard := range this.DataShards {
-		shard.Persist()
-	}
-	for _, shard := range this.ParityShards {
-		shard.Persist()
 	}
 }
 

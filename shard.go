@@ -60,14 +60,23 @@ func (this *Shard) Contents() *bytes.Buffer {
 
 // Persist
 func (this *Shard) Persist() {
+	// Make sure block folder is prepared
+	this.Block().PrepareFolder()
+
 	// @todo better writing to files, guaranteeing no data corruption
-	log.Infof("Persisting shard %s to disk", this.IdStr())
 	path := this.FullPath()
+	log.Infof("Persisting shard %s to disk in %s", this.IdStr(), path)
 	err := ioutil.WriteFile(path, this._toBinaryFormat(), conf.UnixFilePermissions)
 	if err != nil {
 		// @tood handle better
 		panic(err)
 	}
+}
+
+// Load from disk
+func (this *Shard) Load() {
+	log.Infof("Loading shard %s from disk in %s", this.IdStr(), this.FullPath())
+	this._fromBinaryFormat()
 }
 
 // Full path
