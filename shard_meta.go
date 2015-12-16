@@ -30,6 +30,7 @@ func (this *ShardMeta) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, this.MetaVersion)
 	binary.Write(buf, binary.BigEndian, this.FileCount)
+	binary.Write(buf, binary.BigEndian, BINARY_METADATA_LENGTH)
 	return buf.Bytes()
 }
 
@@ -41,10 +42,12 @@ func (this *ShardMeta) FromBytes(b []byte) {
 	panicErr(err)
 	err = binary.Read(buf, binary.BigEndian, &this.FileCount)
 	panicErr(err)
+	// We don't have to read the binary metadata length, because we already know
 }
 
 // Version
 const BINARY_VERSION uint32 = 1
+const BINARY_METADATA_LENGTH uint32 = 4 + 4 + 4
 
 // New metadata
 func newShardMeta() *ShardMeta {
@@ -57,3 +60,4 @@ func newShardMeta() *ShardMeta {
 // Binary file format description
 // uint32 - Meta Version - Numeric incremental ID that indicates the version of this file
 // uint32 - FileCount - Number of files in this shard
+// uint32 - Number of bytes that the metadata takes
