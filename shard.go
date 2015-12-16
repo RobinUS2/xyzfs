@@ -22,9 +22,7 @@ type Shard struct {
 	bufferMode    ShardBufferMode
 	bufferModeMux sync.RWMutex
 
-	// Byte buffers
-	// - ON READ: contents + file metadata + shard index + shard metadata
-	// - ON WRITE (before flush): contains content
+	// Byte buffers, file contents only
 	contents       *bytes.Buffer // Actual byte buffer in-memory, is lazy loaded, use Contents() method to get
 	contentsMux    sync.RWMutex
 	contentsOffset uint32
@@ -65,7 +63,7 @@ func (this *Shard) Persist() {
 	// @todo better writing to files, guaranteeing no data corruption
 	log.Infof("Persisting shard %s to disk", this.IdStr())
 	path := this.FullPath()
-	err := ioutil.WriteFile(path, this.Contents().Bytes(), conf.UnixFilePermissions)
+	err := ioutil.WriteFile(path, this._toBinaryFormat(), conf.UnixFilePermissions)
 	if err != nil {
 		// @tood handle better
 		panic(err)
