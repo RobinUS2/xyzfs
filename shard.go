@@ -30,6 +30,7 @@ type Shard struct {
 	contentsOffset uint32
 
 	// File metadata, recovered from byte buffers on disk
+	// @todo the FileMeta array should be a struct which implements the Bytes() and FromBytes() like ShardMeta and ShardIndex
 	fileMeta    []*FileMeta
 	fileMetaMux sync.RWMutex
 
