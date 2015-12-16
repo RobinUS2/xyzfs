@@ -45,9 +45,11 @@ type Shard struct {
 type ShardBufferMode uint
 
 const (
-	IdleShardBufferMode  ShardBufferMode = iota // 0
-	ReadShardBufferMode                         // 1
-	WriteShardBufferMode                        // 2
+	IdleShardBufferMode  ShardBufferMode = iota // 0 = not doing anything
+	ReadShardBufferMode                         // 1 = initial reading the shard from the bytes on disk into memory structures
+	WriteShardBufferMode                        // 2 = writing into the shard
+	FlushShardBufferMode                        // 3 = final process of writing the shard to bytes for the disk
+	ReadyShardBufferMode                        // 4 = this is what an in-memory version looks like that is used for random access
 )
 
 // Read contents
