@@ -27,9 +27,9 @@ func (this *Shard) FileCount() uint32 {
 }
 
 // Set index length
-// @todo call this function before writing the metadata, but after the generation of the index
 func (this *ShardMeta) SetIndexLength(v uint32) {
 	this.mux.Lock()
+	// Should never be empty
 	if v < 1 {
 		panic("Index length seems to be invalid")
 	}
@@ -37,10 +37,21 @@ func (this *ShardMeta) SetIndexLength(v uint32) {
 	this.mux.Unlock()
 }
 
+// Set contents length
+func (this *ShardMeta) SetContentsLength(v uint32) {
+	this.mux.Lock()
+	// Empty is acceptable
+	if v < 0 {
+		panic("Content length seems to be invalid")
+	}
+	this.ContentsLength = v
+	this.mux.Unlock()
+}
+
 // Set file metadata length
-// @todo call this function before writing the metadata, but after the generation of the file metadata
 func (this *ShardMeta) SetFileMetaLength(v uint32) {
 	this.mux.Lock()
+	// Should never be empty
 	if v < 1 {
 		panic("File meta length length seems to be invalid")
 	}

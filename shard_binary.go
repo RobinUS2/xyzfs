@@ -12,19 +12,34 @@ import (
 func (this *Shard) _toBinaryFormat() []byte {
 	buf := new(bytes.Buffer)
 
+	// Re-usable byte array
+	var b []byte = nil
+
 	// Global read lock
 	this.contentsMux.Lock()
 
 	// Actual file contents
 	if this.contents != nil {
-		buf.Write(this.contents.Bytes())
+		b := this.contents.Bytes()
+		this.shardMeta.SetContentsLength(uint32(len(b)))
+		buf.Write(b)
+		b = nil
+	} else {
+		log.Infof("Converting empty shard %s to bytes", this.IdStr())
+		this.shardMeta.SetContentsLength(0)
 	}
 
 	// File meta
+	b = this.shardFileMeta.Bytes()
+	this.shardMeta.SetFileMetaLength(uint32(len(b)))
 	buf.Write(this.shardFileMeta.Bytes())
+	b = nil
 
 	// File index
-	buf.Write(this.shardIndex.Bytes())
+	b = this.shardIndex.Bytes()
+	this.shardMeta.SetIndexLength(uint32(len(b)))
+	buf.Write(b)
+	b = nil
 
 	// Shard meta
 	log.Infof("%v", this.shardMeta.Bytes())
@@ -66,7 +81,10 @@ func (this *Shard) _fromBinaryFormat() {
 		panic("Failed to read metadata bytes")
 	}
 	log.Debugf("Read %d metadata bytes: %v", metaBytesRead, metaBytes)
-	this.shardFileMeta = newShardFileMeta()
-	this.shardFileMeta.FromBytes(metaBytes)
-	log.Infof("Metadata: %v", this.shardFileMeta)
+	this.shardMeta = newShardMeta()
+	this.shardMeta.FromBytes(metaBytes)
+	if this.shardMeta.MetaVersion < 1 {
+		panic("Failed to read metadata, could not find version")
+	}
+	log.Infof("Metadata: %v", this.shardMeta)
 }
