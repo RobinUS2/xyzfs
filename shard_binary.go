@@ -106,7 +106,22 @@ func (this *Shard) _fromBinaryFormat() {
 	}
 	log.Debugf("Shard index %v", this.shardIndex)
 
-	// @todo read file meta
+	// Read file meta
+	f.Seek(flen-int64(metadataLength)-int64(this.shardMeta.IndexLength)-int64(this.shardMeta.FileMetaLength), 0)
+	buf = bufio.NewReader(f)
+	fileMetaBytes := make([]byte, int(this.shardMeta.FileMetaLength))
+	fileMetaBytesRead, _ := buf.Read(fileMetaBytes)
+	if fileMetaBytesRead != len(fileMetaBytes) || fileMetaBytesRead < 1 {
+		panic("Failed to read file meta bytes")
+	}
+	log.Debugf("Read %d file meta bytes", fileMetaBytesRead)
+	this.shardFileMeta = newShardFileMeta()
+	this.shardFileMeta.FromBytes(fileMetaBytes)
+	fileMetaBytes = nil
+	if this.shardFileMeta.fileMeta == nil {
+		panic("Fle meta is nil")
+	}
+	log.Debugf("Shard file meta %v", this.shardFileMeta)
 
-	// @todo read contents
+	// We don't read the file contents here, that's read from disk
 }
