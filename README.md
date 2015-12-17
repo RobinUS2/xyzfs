@@ -18,3 +18,12 @@ In order to run the rests (with race build on)
 ```
 ./test.sh
 ```
+
+Docker
+=============
+In order to run xyzFS in Docker, use the following
+```
+cd docker
+./build_container.sh
+./run_container.sh
+```
