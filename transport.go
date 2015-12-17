@@ -60,13 +60,6 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	}
 }
 
-// Discover seeds
-func (this *NetworkTransport) discoverSeeds() {
-	for _, seed := range conf.Seeds {
-		go this._connect(seed)
-	}
-}
-
 // Discover a single seed
 func (this *NetworkTransport) _connect(node string) {
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
@@ -121,9 +114,6 @@ func (this *NetworkTransport) _send(node string, b []byte) {
 func (this *NetworkTransport) start() {
 	// Start server
 	go this.listen()
-
-	// Start seed discovery
-	this.discoverSeeds()
 }
 
 // New NetworkTransport service

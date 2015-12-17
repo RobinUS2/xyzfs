@@ -47,6 +47,7 @@ func newGossip() *Gossip {
 
 	// Start
 	g.transport.start()
+	g.discoverSeeds()
 
 	return g
 }
