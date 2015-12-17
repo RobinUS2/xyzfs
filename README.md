@@ -35,3 +35,11 @@ Design principles
 - shared nothing
 - built-in replication
 - reed solomon error correction (erasure coding)
+
+Terminology
+=============
+- node: (virtual) machine that runs one instance of the xyzfs binary
+- volume: location on disk of a node where data is stored
+- block: chunk of data that is stored in at least one volume which is replicated
+- shard: part of a block which can be either data or parity for erasure coding
+- file: representation of a file like in a typical file system
