@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build
-source build.sh -race
+source ./build.sh race
 
 # Run tests
 go test -v .
