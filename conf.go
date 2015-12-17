@@ -19,6 +19,7 @@ type Conf struct {
 	UnixFolderPermissions os.FileMode
 	UnixFilePermissions   os.FileMode
 	VolumeBasePath        string
+	GossipPort            int
 }
 
 type DatastoreConf struct {
@@ -27,13 +28,21 @@ type DatastoreConf struct {
 
 func newConf() *Conf {
 	c := &Conf{
-		HttpPort:              8080,
-		DataShardsPerBlock:    10,
-		ParityShardsPerBlock:  3,
+		// Network
+		HttpPort:   8080,
+		GossipPort: 3322,
+
+		// Shards
+		DataShardsPerBlock:   10,
+		ParityShardsPerBlock: 3,
+		ShardSizeInBytes:     1024 * 1024 * 32,
+
+		// Permission
 		UnixFolderPermissions: 0655,
 		UnixFilePermissions:   0655,
-		ShardSizeInBytes:      1024 * 1024 * 32,
-		VolumeBasePath:        "/xyzfs/data",
+
+		// Storage
+		VolumeBasePath: "/xyzfs/data",
 	}
 
 	if len(confSeedFlag) > 0 {
