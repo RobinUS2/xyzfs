@@ -35,6 +35,8 @@ Design principles
 - shared nothing
 - built-in replication
 - reed solomon error correction (erasure coding)
+- able to deal with lots of small files
+- able to deal with temporary / short-lived files
 
 Terminology
 =============
