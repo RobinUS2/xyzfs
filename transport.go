@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -11,6 +12,7 @@ import (
 // Network transport layer
 
 type NetworkTransport struct {
+	protocol    string
 	port        int
 	serviceName string
 	// Handlers
@@ -23,8 +25,8 @@ type NetworkTransport struct {
 
 // Listen
 func (this *NetworkTransport) listen() {
-	log.Infof("Starting %s on port TCP/%d", this.serviceName, this.port)
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", this.port))
+	log.Infof("Starting %s on port %s/%d", this.serviceName, strings.ToUpper(this.protocol), this.port)
+	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
 	if err != nil {
 		panicErr(err)
 	}
@@ -71,7 +73,7 @@ func (this *NetworkTransport) _connect(node string) {
 	var conn net.Conn
 	var err error
 	for {
-		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", node, this.port))
+		conn, err = net.Dial(this.protocol, fmt.Sprintf("%s:%d", node, this.port))
 		if err != nil {
 			// handle error
 			log.Errorf("Failed to contact node %s for %s: %s", node, this.serviceName, err)
@@ -125,8 +127,9 @@ func (this *NetworkTransport) start() {
 }
 
 // New NetworkTransport service
-func newNetworkTransport(serviceName string, port int) *NetworkTransport {
+func newNetworkTransport(protocol string, serviceName string, port int) *NetworkTransport {
 	g := &NetworkTransport{
+		protocol:    protocol,
 		port:        port,
 		serviceName: serviceName,
 		connections: make(map[string]*net.Conn),

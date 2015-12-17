@@ -30,7 +30,7 @@ func (this *Gossip) _send(node string, msg *GossipMessage) {
 func newGossip() *Gossip {
 	// Create gossip
 	g := &Gossip{
-		transport: newNetworkTransport("gossip", conf.GossipPort),
+		transport: newNetworkTransport("tcp", "gossip", conf.GossipPort),
 	}
 
 	// Message
