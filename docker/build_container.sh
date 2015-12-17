@@ -7,7 +7,7 @@
 cp ../xyzfs .
 
 # Build container
-docker build .
+docker build --tag xyzfs .
 
 # Cleanup
 rm -f xyzfs
