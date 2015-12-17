@@ -27,3 +27,11 @@ cd docker
 ./build_container.sh
 ./run_container.sh
 ```
+
+Design principles
+=============
+- no master
+- no single point of failure (SPOF)
+- shared nothing
+- built-in replication
+- reed solomon error correction (erasure coding)
