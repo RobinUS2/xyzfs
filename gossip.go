@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -30,7 +31,20 @@ func (this *Gossip) listen() {
 
 // Handle connection
 func (this *Gossip) handleConnection(conn net.Conn) {
-	// @todo
+	// Read bytes
+	tbuf := make([]byte, 8096)
+
+	for {
+		n, err := conn.Read(tbuf)
+		// Was there an error in reading ?
+		if err != nil {
+			if err != io.EOF {
+				log.Printf("Read error: %s", err)
+			}
+			break
+		}
+		log.Infof("Bytes %v", tbuf[0:n])
+	}
 }
 
 func newGossip() *Gossip {
