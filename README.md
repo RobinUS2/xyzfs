@@ -46,3 +46,10 @@ Terminology
 - block: chunk of data that is stored in at least one volume which is replicated
 - shard: part of a block which can be either data or parity for erasure coding
 - file: representation of a file like in a typical file system
+
+Networking
+=============
+- HTTP 8080: REST API for CRUD operations on the file system
+- TCP 3322: Binary gossip between nodes
+- TCP 3323: Binary transport between nodes (reliable)
+- UDP 3324: Binary transport between nodes
