@@ -70,17 +70,17 @@ func TestNewFile(t *testing.T) {
 	// Validate shard meta (de)serialization
 	shardFileMetaBytes := shard.shardFileMeta.Bytes()
 	if len(shardFileMetaBytes) < 1 {
-		panic("Shard file meta bytes must be non-zero")
+		t.Error("Shard file meta bytes must be non-zero")
 	}
 
 	// Load these bytes into new to confirm it's still intact
 	newShardFileMetaInstance := newShardFileMeta()
 	if len(newShardFileMetaInstance.fileMeta) != 0 {
-		panic("Empty shard file meta must be empty")
+		t.Error("Empty shard file meta must be empty")
 	}
 	newShardFileMetaInstance.FromBytes(shardFileMetaBytes)
 	if len(newShardFileMetaInstance.fileMeta) != 2 {
-		panic("Loaded shard file meta must be 2")
+		t.Error("Loaded shard file meta must be 2")
 	}
 
 	// Persist shard to disk
@@ -94,4 +94,25 @@ func TestNewFile(t *testing.T) {
 
 	// Read from disk
 	shard.Load()
+
+	// Validate (no need to check contents as those are not used directly)
+	if shard.shardIndex == nil {
+		t.Error("Failed to load shard index")
+	}
+	if shard.shardMeta == nil {
+		t.Error("Failed to load shard meta")
+	}
+	if shard.shardFileMeta == nil {
+		t.Error("Failed to load shard file meta")
+	}
+
+	// Functional validaton on the index
+	if shard.shardIndex.Test(fileMeta.FullName) == false {
+		t.Error("Shard index (after persist, nil, load) does not contain file 1")
+	}
+
+	// Function validation on shard meta
+	if shard.FileCount() != 2 {
+		t.Error("Shard (after persist, nil, load) should contain 2 files")
+	}
 }
