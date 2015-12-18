@@ -75,11 +75,11 @@ func TestNewFile(t *testing.T) {
 
 	// Load these bytes into new to confirm it's still intact
 	newShardFileMetaInstance := newShardFileMeta()
-	if len(newShardFileMetaInstance.fileMeta) != 0 {
+	if len(newShardFileMetaInstance.FileMeta) != 0 {
 		t.Error("Empty shard file meta must be empty")
 	}
 	newShardFileMetaInstance.FromBytes(shardFileMetaBytes)
-	if len(newShardFileMetaInstance.fileMeta) != 2 {
+	if len(newShardFileMetaInstance.FileMeta) != 2 {
 		t.Error("Loaded shard file meta must be 2")
 	}
 
@@ -114,5 +114,20 @@ func TestNewFile(t *testing.T) {
 	// Function validation on shard meta
 	if shard.FileCount() != 2 {
 		t.Error("Shard (after persist, nil, load) should contain 2 files")
+	}
+	if shard.shardFileMeta.FileMeta[0].FullName != fileMeta.FullName {
+		t.Error("Failed to read file meta name after shard load")
+	}
+	if shard.shardFileMeta.FileMeta[0].Size < 1 {
+		t.Error("Failed to read file meta size after shard load")
+	}
+	if len(shard.shardFileMeta.FileMeta[0].Id) != 16 {
+		t.Error("Failed to read file meta id after shard load")
+	}
+	if shard.shardFileMeta.FileMeta[0].Created < 1 {
+		t.Error("Failed to read file meta created after shard load")
+	}
+	if shard.shardFileMeta.FileMeta[1].StartOffset < 1 {
+		t.Error("Failed to read file meta start offset after shard load")
 	}
 }
