@@ -6,21 +6,21 @@ import (
 )
 
 type ShardFileMeta struct {
-	fileMeta []*FileMeta
+	FileMeta []*FileMeta
 	mux      sync.RWMutex
 }
 
 // Add file meta
 func (this *ShardFileMeta) Add(f *FileMeta) {
 	this.mux.Lock()
-	this.fileMeta = append(this.fileMeta, f)
+	this.FileMeta = append(this.FileMeta, f)
 	this.mux.Unlock()
 }
 
 // To bytes
 func (this *ShardFileMeta) Bytes() []byte {
 	this.mux.RLock()
-	b, be := json.Marshal(this.fileMeta)
+	b, be := json.Marshal(this.FileMeta)
 	this.mux.RUnlock()
 	if be != nil {
 		panic("Failed to convert file meta to JSON")
@@ -31,12 +31,12 @@ func (this *ShardFileMeta) Bytes() []byte {
 // From bytes
 func (this *ShardFileMeta) FromBytes(b []byte) {
 	this.mux.Lock()
-	json.Unmarshal(b, &this.fileMeta)
+	json.Unmarshal(b, &this.FileMeta)
 	this.mux.Unlock()
 }
 
 func newShardFileMeta() *ShardFileMeta {
 	return &ShardFileMeta{
-		fileMeta: make([]*FileMeta, 0),
+		FileMeta: make([]*FileMeta, 0),
 	}
 }

@@ -118,7 +118,7 @@ func (this *Shard) _fromBinaryFormat() {
 	this.shardFileMeta = newShardFileMeta()
 	this.shardFileMeta.FromBytes(fileMetaBytes)
 	fileMetaBytes = nil
-	if this.shardFileMeta.fileMeta == nil {
+	if this.shardFileMeta.FileMeta == nil {
 		panic("Fle meta is nil")
 	}
 	log.Debugf("Shard file meta %v", this.shardFileMeta)
