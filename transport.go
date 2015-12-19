@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -19,7 +20,7 @@ type NetworkTransport struct {
 	_onMessage func([]byte)
 	_onConnect func(string)
 	// Connections
-	connections    map[string]*net.Conn
+	connections    map[string]*TransportConnection
 	connectionsMux sync.RWMutex
 }
 
@@ -89,7 +90,7 @@ func (this *NetworkTransport) _connect(node string) {
 
 	// Keep connection
 	this.connectionsMux.Lock()
-	this.connections[node] = &conn
+	this.connections[node] = newTransportConnection(node, &conn)
 	this.connectionsMux.Unlock()
 
 	// Send HELLO message
@@ -97,17 +98,23 @@ func (this *NetworkTransport) _connect(node string) {
 }
 
 // Send message
-func (this *NetworkTransport) _send(node string, b []byte) {
-	// @todo rewrite, use a channel to buffer messages and write async in order to node
+func (this *NetworkTransport) _send(node string, b []byte) error {
 	this.connectionsMux.Lock()
 	defer this.connectionsMux.Unlock()
 	if this.connections[node] == nil {
-		log.Warnf("No connection found to %s for %s", node, this.serviceName)
-		return
+		errorMsg := fmt.Sprintf("No connection found to %s for %s", node, this.serviceName)
+		log.Warn(errorMsg)
+		return errors.New(errorMsg)
 	}
-	conn := *this.connections[node]
-	conn.Write(b)
-	log.Debugf("Written %d %s bytes to %s", len(b), this.serviceName, node)
+	var connection *TransportConnection = this.connections[node]
+	var conn net.Conn = *connection.conn
+	_, err := conn.Write(b)
+	if err != nil {
+		log.Warnf("Failed to write %d %s bytes to %s", len(b), this.serviceName, node)
+	} else {
+		log.Debugf("Written %d %s bytes to %s", len(b), this.serviceName, node)
+	}
+	return err
 }
 
 // Start
@@ -122,7 +129,7 @@ func newNetworkTransport(protocol string, serviceName string, port int) *Network
 		protocol:    protocol,
 		port:        port,
 		serviceName: serviceName,
-		connections: make(map[string]*net.Conn),
+		connections: make(map[string]*TransportConnection),
 	}
 
 	return g
