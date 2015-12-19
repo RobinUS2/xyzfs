@@ -46,6 +46,8 @@ func (this *Datastore) NewBlock() *Block {
 
 	// @todo replicate shard to other host
 	// @todo store shard replication information on disk + in-memory
+	// @todo replicate shard index to primary hosts via TCP
+	// @todo replicate shard index to non-primary hosts via UDP
 
 	return b
 }
