@@ -25,6 +25,7 @@ func startApplication() {
 
 		// Basic config
 		conf = newConf()
+		conf.prepareStartup()
 
 		// Data store config
 		conf.Datastore = newDatastoreConf()

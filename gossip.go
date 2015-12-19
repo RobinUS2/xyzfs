@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"sync"
+	"time"
 )
 
 // Responsible for figuring out which other nodes are out there
@@ -38,7 +42,7 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 	log.Infof("Cmeta %s", cmeta.RemoteAddr)
 	state := this.GetNodeState(cmeta.GetNode())
 	timeSinceLastHelloSent := unixTsUint32() - state.GetLastHelloSent()
-	if timeSinceLastHelloSent > 60 {
+	if timeSinceLastHelloSent > conf.GossipHelloInterval {
 		this._sendHello(cmeta.GetNode())
 	}
 }
@@ -54,13 +58,34 @@ func (this *Gossip) GetNodeState(node string) *GossipNodeState {
 	this.nodesMux.RLock()
 	s = this.nodes[node]
 	this.nodesMux.RUnlock()
+
+	// Existing node?
 	if s == nil {
+		// New node
 		this.nodesMux.Lock()
 		this.nodes[node] = newGossipNodeState(node)
 		s = this.nodes[node]
 		this.nodesMux.Unlock()
+
+		// Keep list on local disk
+		this.PersistNodesToDisk()
 	}
 	return s
+}
+
+// Persist list of nodes to disk for future
+func (this *Gossip) PersistNodesToDisk() {
+	// To JSON
+	this.nodesMux.RLock()
+	jsonBytes, jsonE := json.Marshal(this.nodes)
+	this.nodesMux.RUnlock()
+	panicErr(jsonE)
+
+	// Write to disk
+	err := ioutil.WriteFile(fmt.Sprintf("%s/gossip_nodes.json", conf.MetaBasePath), jsonBytes, 0644)
+	if err != nil {
+		log.Errorf("Failed to persist gossip nodes list to disk: %s", err)
+	}
 }
 
 // New gossip service
@@ -86,6 +111,22 @@ func newGossip() *Gossip {
 			break
 		}
 	}
+
+	// Ticker
+	ticker := time.NewTicker(time.Second * 1)
+	go func() {
+		for _ = range ticker.C {
+			// Send new hellos?
+			g.nodesMux.RLock()
+			for node, _ := range g.nodes {
+				timeSinceLastHelloSent := unixTsUint32() - g.GetNodeState(node).GetLastHelloSent()
+				if timeSinceLastHelloSent > conf.GossipHelloInterval {
+					go g._sendHello(node)
+				}
+			}
+			g.nodesMux.RUnlock()
+		}
+	}()
 
 	// Connect
 	g.transport._onConnect = func(cmeta *TransportConnectionMeta, node string) {

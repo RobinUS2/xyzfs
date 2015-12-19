@@ -18,8 +18,10 @@ type Conf struct {
 	ShardSizeInBytes      int
 	UnixFolderPermissions os.FileMode
 	UnixFilePermissions   os.FileMode
+	MetaBasePath          string
 	VolumeBasePath        string
 	GossipPort            int
+	GossipHelloInterval   uint32
 }
 
 type DatastoreConf struct {
@@ -42,7 +44,11 @@ func newConf() *Conf {
 		UnixFilePermissions:   0655,
 
 		// Storage
+		MetaBasePath:   "/xyzfs/meta",
 		VolumeBasePath: "/xyzfs/data",
+
+		// Gosisp
+		GossipHelloInterval: 5,
 	}
 
 	if len(confSeedFlag) > 0 {
@@ -50,6 +56,28 @@ func newConf() *Conf {
 	}
 
 	return c
+}
+
+func (this *Conf) prepareStartup() {
+	// Meta folder exists?
+	if _, err := os.Stat(this.MetaBasePath); os.IsNotExist(err) {
+		// Create
+		log.Infof("Creating folder %s", this.MetaBasePath)
+		e := os.MkdirAll(this.MetaBasePath, conf.UnixFolderPermissions)
+		if e != nil {
+			log.Errorf("Failed to create %s: %s", this.MetaBasePath, e)
+		}
+	}
+
+	// Volume folder exists?
+	if _, err := os.Stat(this.VolumeBasePath); os.IsNotExist(err) {
+		// Create
+		log.Infof("Creating folder %s", this.VolumeBasePath)
+		e := os.MkdirAll(this.VolumeBasePath, conf.UnixFolderPermissions)
+		if e != nil {
+			log.Errorf("Failed to create %s: %s", this.VolumeBasePath, e)
+		}
+	}
 }
 
 func newDatastoreConf() *DatastoreConf {

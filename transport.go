@@ -116,7 +116,10 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	var conn net.Conn = *connection.conn
 	_, err := conn.Write(b)
 	if err != nil {
-		log.Warnf("Failed to write %d %s bytes to %s", len(b), this.serviceName, node)
+		log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
+
+		// Reset connection
+		delete(this.connections, node)
 	} else {
 		log.Debugf("Written %d %s bytes to %s", len(b), this.serviceName, node)
 	}
