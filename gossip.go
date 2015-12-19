@@ -26,6 +26,9 @@ func (this *Gossip) discoverSeeds() {
 // On handshake complete
 func (this *Gossip) _onHelloHandshakeComplete(node string) {
 	this._sendNodeList(node)
+
+	// Connect binary once handshake is complete
+	binaryTransport.transport._connect(node)
 }
 
 // Send message

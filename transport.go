@@ -69,10 +69,20 @@ func (this *NetworkTransport) _connect(node string) {
 	this.isConnectingMux.Lock()
 	if this.isConnecting[node] {
 		this.isConnectingMux.Unlock()
+		log.Debugf("Ignore _connect, we are aleady connectnig to %s", node)
 		return
 	}
 	this.isConnecting[node] = true
 	this.isConnectingMux.Unlock()
+
+	// Are we already connected?
+	this.connectionsMux.RLock()
+	if this.connections[node] != nil {
+		this.connectionsMux.RUnlock()
+		log.Debugf("Ignore _connect, we are aleady connected to %s", node)
+		return
+	}
+	this.connectionsMux.RUnlock()
 
 	// Start contacting node
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
