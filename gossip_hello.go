@@ -2,7 +2,10 @@ package main
 
 // Send hello message to node
 func (this *Gossip) _sendHello(node string) error {
-	msg := newGossipMessage(HelloGossipMessageType, nil)
+	// Create message with the runtime ID
+	msg := newGossipMessage(HelloGossipMessageType, []byte(runtime.Id))
+
+	// Send
 	err := this._send(node, msg)
 
 	// Update last sent
@@ -20,6 +23,12 @@ func (this *Gossip) _sendHello(node string) error {
 
 // Receive hello
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
+	// Ignore messages from ourselves
+	if string(msg.Data) == runtime.Id {
+		log.Debugf("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
+		return
+	}
+
 	// State
 	state := this.GetNodeState(cmeta.GetNode())
 
