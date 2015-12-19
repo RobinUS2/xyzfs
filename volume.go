@@ -28,6 +28,20 @@ func (this *Volume) IdStr() string {
 	return uuidToString(this.Id)
 }
 
+// Get blocks
+func (this *Volume) Blocks() map[string]*Block {
+	this.blocksMux.RLock()
+	defer this.blocksMux.RUnlock()
+	return this.blocks
+}
+
+// Get shards
+func (this *Volume) Shards() map[string]*Shard {
+	this.shardsMux.RLock()
+	defer this.shardsMux.RUnlock()
+	return this.shards
+}
+
 // Register shard
 func (this *Volume) RegisterShard(s *Shard) {
 	this.shardsMux.Lock()

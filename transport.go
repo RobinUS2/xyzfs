@@ -13,10 +13,11 @@ import (
 // Network transport layer
 
 type NetworkTransport struct {
-	protocol    string
-	port        int
-	serviceName string
-	listenAddr  string // Local listen address
+	protocol         string
+	port             int
+	serviceName      string
+	listenAddr       string // Local listen address
+	receiveBufferLen int
 	// Handlers
 	_onMessage func(*TransportConnectionMeta, []byte)
 	_onConnect func(*TransportConnectionMeta, string)
@@ -48,7 +49,7 @@ func (this *NetworkTransport) listen() {
 // Handle connection
 func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	// Read bytes
-	tbuf := make([]byte, 8096)
+	tbuf := make([]byte, this.receiveBufferLen)
 
 	for {
 		n, err := conn.Read(tbuf)
@@ -177,13 +178,14 @@ func (this *NetworkTransport) start() {
 }
 
 // New NetworkTransport service
-func newNetworkTransport(protocol string, serviceName string, port int) *NetworkTransport {
+func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int) *NetworkTransport {
 	g := &NetworkTransport{
-		protocol:     protocol,
-		port:         port,
-		serviceName:  serviceName,
-		connections:  make(map[string]*TransportConnection),
-		isConnecting: make(map[string]bool),
+		protocol:         protocol,
+		port:             port,
+		serviceName:      serviceName,
+		connections:      make(map[string]*TransportConnection),
+		isConnecting:     make(map[string]bool),
+		receiveBufferLen: receiveBufferLen,
 	}
 
 	return g

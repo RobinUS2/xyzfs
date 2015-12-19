@@ -10,9 +10,14 @@ type Datastore struct {
 // Prepare data store for interactions
 func (this *Datastore) prepare() {
 	// Load volumes
-	for _, volume := range conf.Datastore.Volumes {
+	for _, volume := range this.Volumes() {
 		volume.prepare()
 	}
+}
+
+// Get volumes
+func (this *Datastore) Volumes() []*Volume {
+	return conf.Datastore.Volumes
 }
 
 // New block

@@ -10,19 +10,21 @@ var conf *Conf
 var confSeedFlag string
 
 type Conf struct {
-	HttpPort              int
-	Datastore             *DatastoreConf
-	Seeds                 []string
-	DataShardsPerBlock    int
-	ParityShardsPerBlock  int
-	ShardSizeInBytes      int
-	UnixFolderPermissions os.FileMode
-	UnixFilePermissions   os.FileMode
-	MetaBasePath          string
-	VolumeBasePath        string
-	GossipPort            int
-	GossipHelloInterval   uint32
-	BinaryPort            int
+	HttpPort                  int
+	Datastore                 *DatastoreConf
+	Seeds                     []string
+	DataShardsPerBlock        int
+	ParityShardsPerBlock      int
+	ShardSizeInBytes          int
+	UnixFolderPermissions     os.FileMode
+	UnixFilePermissions       os.FileMode
+	MetaBasePath              string
+	VolumeBasePath            string
+	GossipPort                int
+	GossipHelloInterval       uint32
+	GossipTransportReadBuffer int
+	BinaryPort                int
+	BinaryTransportReadBuffer int
 }
 
 type DatastoreConf struct {
@@ -50,7 +52,11 @@ func newConf() *Conf {
 		VolumeBasePath: "/xyzfs/data",
 
 		// Gossip
-		GossipHelloInterval: 5,
+		GossipHelloInterval:       5,
+		GossipTransportReadBuffer: 8 * 1024,
+
+		// Binary
+		BinaryTransportReadBuffer: 32 * 1024 * 1024,
 	}
 
 	if len(confSeedFlag) > 0 {

@@ -13,12 +13,13 @@ type BinaryTransport struct {
 // Create new binary transport
 func newBinaryTransport() *BinaryTransport {
 	b := &BinaryTransport{
-		transport: newNetworkTransport("tcp", "binary", conf.BinaryPort),
+		transport: newNetworkTransport("tcp", "binary", conf.BinaryPort, conf.BinaryTransportReadBuffer),
 	}
 
 	// Listeners
 	b.transport._onConnect = func(cmeta *TransportConnectionMeta, node string) {
-		// @todo implement
+		// Send snapshot of shards
+		b._sendShards(node)
 	}
 	b.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
 		// @todo implement
