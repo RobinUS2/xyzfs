@@ -22,6 +22,7 @@ type Conf struct {
 	VolumeBasePath        string
 	GossipPort            int
 	GossipHelloInterval   uint32
+	BinaryPort            int
 }
 
 type DatastoreConf struct {
@@ -33,6 +34,7 @@ func newConf() *Conf {
 		// Network
 		HttpPort:   8080,
 		GossipPort: 3322,
+		BinaryPort: 3323,
 
 		// Shards
 		DataShardsPerBlock:   10,
@@ -47,7 +49,7 @@ func newConf() *Conf {
 		MetaBasePath:   "/xyzfs/meta",
 		VolumeBasePath: "/xyzfs/data",
 
-		// Gosisp
+		// Gossip
 		GossipHelloInterval: 5,
 	}
 

@@ -30,6 +30,9 @@ func startApplication() {
 		// New runtime
 		runtime = newRuntime()
 
+		// Binary transport
+		binaryTransport = newBinaryTransport()
+
 		// Data store config
 		conf.Datastore = newDatastoreConf()
 
