@@ -11,6 +11,11 @@ type BinaryTransport struct {
 	udpTransport *NetworkTransport
 }
 
+// Send message
+func (this *BinaryTransport) _send(node string, msg *BinaryTransportMessage) error {
+	return this.transport._send(node, msg.Bytes())
+}
+
 // Create new binary transport
 func newBinaryTransport() *BinaryTransport {
 	b := &BinaryTransport{
@@ -21,7 +26,7 @@ func newBinaryTransport() *BinaryTransport {
 	// Binary on connect
 	b.transport._onConnect = func(cmeta *TransportConnectionMeta, node string) {
 		// Send snapshot of shards
-		b._sendShards(node)
+		b._sendShardIndices(node)
 	}
 
 	// Binary on message
