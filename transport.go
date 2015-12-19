@@ -22,6 +22,9 @@ type NetworkTransport struct {
 	// Connections
 	connections    map[string]*TransportConnection
 	connectionsMux sync.RWMutex
+	// Is connecting
+	isConnectingMux sync.RWMutex
+	isConnecting    map[string]bool
 }
 
 // Listen
@@ -63,6 +66,16 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 // Discover a single seed
 func (this *NetworkTransport) _connect(node string) {
+	// Are we already waiting for this?
+	this.isConnectingMux.Lock()
+	if this.isConnecting[node] {
+		this.isConnectingMux.Unlock()
+		return
+	}
+	this.isConnecting[node] = true
+	this.isConnectingMux.Unlock()
+
+	// Start contacting node
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
 	var conn net.Conn
 	var err error
@@ -92,6 +105,11 @@ func (this *NetworkTransport) _connect(node string) {
 	this.connectionsMux.Lock()
 	this.connections[node] = newTransportConnection(node, &conn)
 	this.connectionsMux.Unlock()
+
+	// Done connecting
+	this.isConnectingMux.Lock()
+	delete(this.isConnecting, node)
+	this.isConnectingMux.Unlock()
 
 	// Send HELLO message
 	this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
@@ -135,10 +153,11 @@ func (this *NetworkTransport) start() {
 // New NetworkTransport service
 func newNetworkTransport(protocol string, serviceName string, port int) *NetworkTransport {
 	g := &NetworkTransport{
-		protocol:    protocol,
-		port:        port,
-		serviceName: serviceName,
-		connections: make(map[string]*TransportConnection),
+		protocol:     protocol,
+		port:         port,
+		serviceName:  serviceName,
+		connections:  make(map[string]*TransportConnection),
+		isConnecting: make(map[string]bool),
 	}
 
 	return g
