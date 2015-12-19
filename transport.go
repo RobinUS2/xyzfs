@@ -145,6 +145,14 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 
 // Start
 func (this *NetworkTransport) start() {
+	// Validate transport
+	if this._onConnect == nil {
+		panic("No on-connect defined")
+	}
+	if this._onMessage == nil {
+		panic("No on-message defined")
+	}
+
 	// Start server
 	go this.listen()
 }
