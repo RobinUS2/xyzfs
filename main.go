@@ -27,6 +27,9 @@ func startApplication() {
 		conf = newConf()
 		conf.prepareStartup()
 
+		// New runtime
+		runtime = newRuntime()
+
 		// Data store config
 		conf.Datastore = newDatastoreConf()
 
