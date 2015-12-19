@@ -111,7 +111,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.isConnectingMux.Lock()
 	if this.isConnecting[node] {
 		this.isConnectingMux.Unlock()
-		log.Infof("Ignore _connect, we are aleady connectnig to %s", node)
+		log.Infof("Ignore _connect, we are aleady connecting to %s", node)
 		return
 	}
 	this.isConnecting[node] = true
