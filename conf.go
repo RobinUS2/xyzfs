@@ -24,6 +24,7 @@ type Conf struct {
 	GossipHelloInterval       uint32
 	GossipTransportReadBuffer int
 	BinaryPort                int
+	BinaryUdpPort             int
 	BinaryTransportReadBuffer int
 }
 
@@ -34,9 +35,10 @@ type DatastoreConf struct {
 func newConf() *Conf {
 	c := &Conf{
 		// Network
-		HttpPort:   8080,
-		GossipPort: 3322,
-		BinaryPort: 3323,
+		HttpPort:      8080,
+		GossipPort:    3322,
+		BinaryPort:    3323,
+		BinaryUdpPort: 3324,
 
 		// Shards
 		DataShardsPerBlock:   10,

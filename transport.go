@@ -32,6 +32,20 @@ type NetworkTransport struct {
 // Listen
 func (this *NetworkTransport) listen() {
 	log.Infof("Starting %s on port %s/%d", this.serviceName, strings.ToUpper(this.protocol), this.port)
+	switch this.protocol {
+	case "tcp":
+		this._listenTcp()
+		break
+	case "udp":
+		this._listenUdp()
+		break
+	default:
+		panic(fmt.Sprintf("Protocol %s not supported", this.protocol))
+	}
+}
+
+// Listen TCP
+func (this *NetworkTransport) _listenTcp() {
 	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
 	this.listenAddr = ln.Addr().String()
 	if err != nil {
@@ -43,6 +57,31 @@ func (this *NetworkTransport) listen() {
 			// handle error
 		}
 		go this.handleConnection(conn)
+	}
+}
+
+// Listen TCP
+func (this *NetworkTransport) _listenUdp() {
+	// Prepare address
+	serverAddr, err := net.ResolveUDPAddr(this.protocol, fmt.Sprintf(":%d", this.port))
+	panicErr(err)
+
+	ln, err := net.ListenUDP(this.protocol, serverAddr)
+	this.listenAddr = ln.LocalAddr().String()
+	if err != nil {
+		panicErr(err)
+	}
+	for {
+		tbuf := make([]byte, this.receiveBufferLen)
+		n, addr, err := ln.ReadFromUDP(tbuf)
+		log.Infof("Received ", string(tbuf[0:n]), " from ", addr)
+
+		if err != nil {
+			log.Errorf("UDP receive error: ", err)
+		} else {
+			// Read message
+			this._onMessage(newTransportConnectionMeta(ln.RemoteAddr().String()), tbuf[0:n])
+		}
 	}
 }
 
@@ -72,7 +111,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.isConnectingMux.Lock()
 	if this.isConnecting[node] {
 		this.isConnectingMux.Unlock()
-		log.Debugf("Ignore _connect, we are aleady connectnig to %s", node)
+		log.Infof("Ignore _connect, we are aleady connectnig to %s", node)
 		return
 	}
 	this.isConnecting[node] = true
@@ -82,7 +121,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.connectionsMux.RLock()
 	if this.connections[node] != nil {
 		this.connectionsMux.RUnlock()
-		log.Debugf("Ignore _connect, we are aleady connected to %s", node)
+		log.Infof("Ignore _connect, we are aleady connected to %s", node)
 		return
 	}
 	this.connectionsMux.RUnlock()
@@ -131,7 +170,9 @@ func (this *NetworkTransport) _connect(node string) {
 	this.isConnectingMux.Unlock()
 
 	// Send HELLO message
-	this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+	if this._onConnect != nil {
+		this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+	}
 }
 
 // Send message
@@ -158,7 +199,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		// Reset connection
 		delete(this.connections, node)
 	} else {
-		log.Debugf("Written %d %s bytes to %s", len(b), this.serviceName, node)
+		log.Infof("Written %d %s bytes to %s", len(b), this.serviceName, node)
 	}
 	return err
 }
@@ -166,8 +207,8 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 // Start
 func (this *NetworkTransport) start() {
 	// Validate transport
-	if this._onConnect == nil {
-		panic("No on-connect defined")
+	if this.protocol == "tcp" && this._onConnect == nil {
+		panic("No on-connect defined for TCP")
 	}
 	if this._onMessage == nil {
 		panic("No on-message defined")

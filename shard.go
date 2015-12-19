@@ -147,6 +147,9 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	// Update index
 	this.shardIndex.Add(f.FullName)
 
+	// @todo Write to other replicate nodes
+	// @todo Write shard index change (effectively add file to bloom filter) to all nodes (UDP)
+
 	// Log
 	log.Infof("Created file %s with size %d in shard %s, now contains %d file(s)", f.FullName, f.Size, this.IdStr(), newCount)
 
