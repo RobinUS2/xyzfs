@@ -12,6 +12,7 @@ go get "github.com/satori/go.uuid"
 go get "github.com/klauspost/reedsolomon"
 go get "github.com/Sirupsen/logrus"
 go get "github.com/willf/bloom"
+go get "github.com/spaolacci/murmur3"
 
 case "$1" in
 	docker)
