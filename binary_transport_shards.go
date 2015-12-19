@@ -15,5 +15,10 @@ func (this *BinaryTransport) _sendShards(node string) {
 // Send single shard
 func (this *BinaryTransport) _sendShard(shard *Shard, node string) {
 	log.Infof("Sending local shard %s to %s", shard.IdStr(), node)
-	// @todo
+
+	// To bytes
+	b := shard._toBinaryFormat()
+
+	// Send
+	this.transport._send(node, b)
 }

@@ -77,7 +77,7 @@ func (this *NetworkTransport) _listenUdp() {
 		log.Infof("Received ", string(tbuf[0:n]), " from ", addr)
 
 		if err != nil {
-			log.Errorf("UDP receive error: ", err)
+			log.Errorf("UDP receive error: %s", err)
 		} else {
 			// Read message
 			this._onMessage(newTransportConnectionMeta(ln.RemoteAddr().String()), tbuf[0:n])
@@ -111,7 +111,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.isConnectingMux.Lock()
 	if this.isConnecting[node] {
 		this.isConnectingMux.Unlock()
-		log.Infof("Ignore _connect, we are aleady connecting to %s", node)
+		log.Infof("Ignore connect, we are aleady connecting to %s", node)
 		return
 	}
 	this.isConnecting[node] = true
@@ -121,7 +121,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.connectionsMux.RLock()
 	if this.connections[node] != nil {
 		this.connectionsMux.RUnlock()
-		log.Infof("Ignore _connect, we are aleady connected to %s", node)
+		log.Infof("Ignore connect, we are aleady connected to %s", node)
 		return
 	}
 	this.connectionsMux.RUnlock()

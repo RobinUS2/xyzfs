@@ -35,6 +35,10 @@ type Shard struct {
 
 	// Shard index
 	shardIndex *ShardIndex
+
+	// Is loaded?
+	isLoaded    bool
+	isLoadedMux sync.RWMutex
 }
 
 // Buffer mode
@@ -75,8 +79,21 @@ func (this *Shard) Persist() {
 
 // Load from disk
 func (this *Shard) Load() {
+	this.isLoadedMux.Lock()
+	defer this.isLoadedMux.Unlock()
+
+	// Already loaded
+	if this.isLoaded {
+		// Yes
+		return
+	}
+
+	// Load
 	log.Infof("Loading shard %s from disk in %s", this.IdStr(), this.FullPath())
 	this._fromBinaryFormat()
+
+	// Done
+	this.isLoaded = true
 }
 
 // Full path

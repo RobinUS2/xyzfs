@@ -27,10 +27,12 @@ func newBinaryTransport() *BinaryTransport {
 	// Binary on message
 	b.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
 		// @todo implement
+		log.Infof("Received binary TCP message", b)
 	}
 
 	// Binary on UDP message
 	b.udpTransport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+		log.Infof("Received binary UDP message", b)
 		// @todo implement
 	}
 
