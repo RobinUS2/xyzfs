@@ -39,7 +39,6 @@ func (this *Gossip) _sendHello(node string) {
 
 // Receive hello
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
-	log.Infof("Cmeta %s", cmeta.RemoteAddr)
 	state := this.GetNodeState(cmeta.GetNode())
 	timeSinceLastHelloSent := unixTsUint32() - state.GetLastHelloSent()
 	if timeSinceLastHelloSent > conf.GossipHelloInterval {
@@ -100,7 +99,6 @@ func newGossip() *Gossip {
 	g.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
 		msg := &GossipMessage{}
 		msg.FromBytes(b)
-		log.Infof("%s message %v", g.transport.serviceName, msg)
 
 		switch msg.Type {
 		case HelloGossipMessageType:

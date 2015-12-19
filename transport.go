@@ -57,7 +57,6 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			}
 			break
 		}
-		log.Infof("Bytes %v", tbuf[0:n])
 
 		// Read message
 		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), tbuf[0:n])
