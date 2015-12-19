@@ -5,6 +5,7 @@ package main
 var datastore *Datastore
 
 type Datastore struct {
+	fileLocator *FileLocator
 }
 
 // Prepare data store for interactions
@@ -18,6 +19,11 @@ func (this *Datastore) prepare() {
 // Get volumes
 func (this *Datastore) Volumes() []*Volume {
 	return conf.Datastore.Volumes
+}
+
+// Locate file
+func (this *Datastore) LocateFile(fullName string) (*Shard, error) {
+	return this.fileLocator._locate(this, fullName)
 }
 
 // New block
@@ -53,7 +59,9 @@ func (this *Datastore) NewBlock() *Block {
 }
 
 func newDatastore() *Datastore {
-	d := &Datastore{}
+	d := &Datastore{
+		fileLocator: newFileLocator(),
+	}
 	d.prepare()
 	return d
 }
