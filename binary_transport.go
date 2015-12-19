@@ -9,7 +9,12 @@ type BinaryTransport struct {
 }
 
 func newBinaryTransport() *BinaryTransport {
-	return &BinaryTransport{
+	b := &BinaryTransport{
 		transport: newNetworkTransport("tcp", "binary", conf.BinaryPort),
 	}
+
+	// Start listening
+	b.transport.start()
+
+	return b
 }
