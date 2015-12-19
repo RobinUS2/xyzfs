@@ -27,23 +27,83 @@ func (this *Gossip) discoverSeeds() {
 }
 
 // Send hello message to node
-func (this *Gossip) _sendHello(node string) {
+func (this *Gossip) _sendHello(node string) error {
 	msg := newGossipMessage(HelloGossipMessageType, nil)
 	err := this._send(node, msg)
 
 	// Update last sent
 	if err == nil {
+		// Handshake complete?
+		if this.GetNodeState(node).GetLastHelloSent() == 0 {
+			this._onHelloHandshakeComplete(node)
+		}
+
+		// We have sent hello
 		this.GetNodeState(node).UpdateLastHelloSent()
 	}
+	return err
 }
 
 // Receive hello
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
+	// State
 	state := this.GetNodeState(cmeta.GetNode())
+
+	// Handshake complete?
+	if state.GetLastHelloReceived() == 0 {
+		this._onHelloHandshakeComplete(cmeta.GetNode())
+	}
+
+	// We have received hello
+	state.UpdateLastHelloReceived()
+
+	// Should we send something back immediately?
 	timeSinceLastHelloSent := unixTsUint32() - state.GetLastHelloSent()
 	if timeSinceLastHelloSent > conf.GossipHelloInterval {
 		this._sendHello(cmeta.GetNode())
 	}
+}
+
+// On handshake complete
+func (this *Gossip) _onHelloHandshakeComplete(node string) {
+	this._sendNodeList(node)
+}
+
+// Receive list of nodes
+func (this *Gossip) _receiveNodeList(cmeta *TransportConnectionMeta, msg *GossipMessage) {
+	log.Debugf("Receiving nodes list %s", string(msg.Data))
+
+	// Parse JSON
+	var list []string
+	jsonE := json.Unmarshal(msg.Data, &list)
+	if jsonE != nil {
+		log.Warnf("Failed to read nodes list: %s", jsonE)
+		return
+	}
+
+	// New nodes?
+	var newList []string = make([]string, 0)
+	this.nodesMux.RLock()
+	for _, elm := range list {
+		if this.nodes[elm] == nil {
+			newList = append(newList, elm)
+		}
+	}
+	this.nodesMux.RUnlock()
+
+	// Connect to new nodes
+	if len(newList) > 0 {
+		log.Infof("Discovered new nodes from gossip node list: %v", newList)
+		for _, newElm := range newList {
+			go this._sendHello(newElm)
+		}
+	}
+}
+
+// Send list of nodes
+func (this *Gossip) _sendNodeList(node string) {
+	msg := newGossipMessage(NodeListGossipMessageType, this.NodesToJSON())
+	this._send(node, msg)
 }
 
 // Send message
@@ -73,12 +133,23 @@ func (this *Gossip) GetNodeState(node string) *GossipNodeState {
 }
 
 // Persist list of nodes to disk for future
-func (this *Gossip) PersistNodesToDisk() {
+func (this *Gossip) NodesToJSON() []byte {
 	// To JSON
 	this.nodesMux.RLock()
-	jsonBytes, jsonE := json.Marshal(this.nodes)
+	list := make([]string, 0)
+	for node, _ := range this.nodes {
+		list = append(list, node)
+	}
+	jsonBytes, jsonE := json.Marshal(list)
 	this.nodesMux.RUnlock()
 	panicErr(jsonE)
+	return jsonBytes
+}
+
+// Persist list of nodes to disk for future
+func (this *Gossip) PersistNodesToDisk() {
+	// To JSON
+	jsonBytes := this.NodesToJSON()
 
 	// Write to disk
 	err := ioutil.WriteFile(fmt.Sprintf("%s/gossip_nodes.json", conf.MetaBasePath), jsonBytes, 0644)
@@ -101,9 +172,17 @@ func newGossip() *Gossip {
 		msg.FromBytes(b)
 
 		switch msg.Type {
+		// Hello, ping-like message between nodes
 		case HelloGossipMessageType:
 			g._receiveHello(cmeta, msg)
 			break
+
+			// List of nodes, discovery service helper
+		case NodeListGossipMessageType:
+			g._receiveNodeList(cmeta, msg)
+			break
+
+			// Unknown
 		default:
 			log.Warnf("Received unknown message %v", msg)
 			break

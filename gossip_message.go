@@ -24,6 +24,7 @@ const (
 	EmptyGossipMessageType     GossipMessageType = iota // 0 = not set
 	HelloGossipMessageType                              // 1 = initial hello message for handshake
 	NodeStateGossipMessageType                          // 2 = node state changes
+	NodeListGossipMessageType                           // 3 = node list (exchange list of servers)
 )
 
 // To bytes
@@ -48,6 +49,8 @@ func (this *GossipMessage) FromBytes(b []byte) {
 	panicErr(err)
 	err = binary.Read(buf, binary.BigEndian, &this.Len) // length
 	panicErr(err)
+
+	// Read data
 	this.Data = make([]byte, this.Len)
 	buf.Read(this.Data)
 }
