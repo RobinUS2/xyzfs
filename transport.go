@@ -16,6 +16,7 @@ type NetworkTransport struct {
 	protocol    string
 	port        int
 	serviceName string
+	listenAddr  string // Local listen address
 	// Handlers
 	_onMessage func(*TransportConnectionMeta, []byte)
 	_onConnect func(*TransportConnectionMeta, string)
@@ -31,6 +32,7 @@ type NetworkTransport struct {
 func (this *NetworkTransport) listen() {
 	log.Infof("Starting %s on port %s/%d", this.serviceName, strings.ToUpper(this.protocol), this.port)
 	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
+	this.listenAddr = ln.Addr().String()
 	if err != nil {
 		panicErr(err)
 	}
@@ -83,6 +85,13 @@ func (this *NetworkTransport) _connect(node string) {
 		return
 	}
 	this.connectionsMux.RUnlock()
+
+	// Do not connect to ourselves
+	listenSplit := strings.Split(this.listenAddr, ":")
+	if listenSplit[0] == node {
+		log.Infof("Not connecting to address (%s) on which are are listening ourselves", listenSplit[0])
+		return
+	}
 
 	// Start contacting node
 	log.Infof("Contacting node %s for %s", node, this.serviceName)

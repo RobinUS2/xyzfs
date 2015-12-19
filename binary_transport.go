@@ -2,12 +2,15 @@ package main
 
 // Binary transport: inter-node transfer of data
 
+// Global var
 var binaryTransport *BinaryTransport
 
+// Binary transport
 type BinaryTransport struct {
 	transport *NetworkTransport
 }
 
+// Create new binary transport
 func newBinaryTransport() *BinaryTransport {
 	b := &BinaryTransport{
 		transport: newNetworkTransport("tcp", "binary", conf.BinaryPort),
