@@ -17,8 +17,8 @@ type NetworkTransport struct {
 	port        int
 	serviceName string
 	// Handlers
-	_onMessage func([]byte)
-	_onConnect func(string)
+	_onMessage func(*TransportConnectionMeta, []byte)
+	_onConnect func(*TransportConnectionMeta, string)
 	// Connections
 	connections    map[string]*TransportConnection
 	connectionsMux sync.RWMutex
@@ -57,7 +57,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		log.Infof("Bytes %v", tbuf[0:n])
 
 		// Read message
-		this._onMessage(tbuf[0:n])
+		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), tbuf[0:n])
 	}
 }
 
@@ -94,7 +94,7 @@ func (this *NetworkTransport) _connect(node string) {
 	this.connectionsMux.Unlock()
 
 	// Send HELLO message
-	this._onConnect(node)
+	this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
 }
 
 // Send message
@@ -102,8 +102,14 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	this.connectionsMux.Lock()
 	defer this.connectionsMux.Unlock()
 	if this.connections[node] == nil {
+		// No connection
 		errorMsg := fmt.Sprintf("No connection found to %s for %s", node, this.serviceName)
 		log.Warn(errorMsg)
+
+		// We will try to open one for next time
+		go this._connect(node)
+
+		// Return error
 		return errors.New(errorMsg)
 	}
 	var connection *TransportConnection = this.connections[node]

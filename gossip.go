@@ -34,8 +34,13 @@ func (this *Gossip) _sendHello(node string) {
 }
 
 // Receive hello
-func (this *Gossip) _receiveHello(msg *GossipMessage) {
-
+func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
+	log.Infof("Cmeta %s", cmeta.RemoteAddr)
+	state := this.GetNodeState(cmeta.GetNode())
+	timeSinceLastHelloSent := unixTsUint32() - state.GetLastHelloSent()
+	if timeSinceLastHelloSent > 60 {
+		this._sendHello(cmeta.GetNode())
+	}
 }
 
 // Send message
@@ -45,9 +50,17 @@ func (this *Gossip) _send(node string, msg *GossipMessage) error {
 
 // Get node state
 func (this *Gossip) GetNodeState(node string) *GossipNodeState {
+	var s *GossipNodeState
 	this.nodesMux.RLock()
-	defer this.nodesMux.RUnlock()
-	return this.nodes[node]
+	s = this.nodes[node]
+	this.nodesMux.RUnlock()
+	if s == nil {
+		this.nodesMux.Lock()
+		this.nodes[node] = newGossipNodeState(node)
+		s = this.nodes[node]
+		this.nodesMux.Unlock()
+	}
+	return s
 }
 
 // New gossip service
@@ -59,20 +72,23 @@ func newGossip() *Gossip {
 	}
 
 	// Message
-	g.transport._onMessage = func(b []byte) {
+	g.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
 		msg := &GossipMessage{}
 		msg.FromBytes(b)
 		log.Infof("%s message %v", g.transport.serviceName, msg)
 
 		switch msg.Type {
 		case HelloGossipMessageType:
-			g._receiveHello(msg)
+			g._receiveHello(cmeta, msg)
+			break
+		default:
+			log.Warnf("Received unknown message %v", msg)
 			break
 		}
 	}
 
 	// Connect
-	g.transport._onConnect = func(node string) {
+	g.transport._onConnect = func(cmeta *TransportConnectionMeta, node string) {
 		// Send hello
 		g._sendHello(node)
 	}
