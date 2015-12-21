@@ -32,6 +32,9 @@ type NetworkTransport struct {
 	// Is connecting
 	isConnectingMux sync.RWMutex
 	isConnecting    map[string]bool
+	// Compression
+	_compress   func([]byte) ([]byte, error)
+	_decompress func([]byte) ([]byte, error)
 }
 
 // Listen
@@ -138,8 +141,15 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			panic("Missed Z from magic suffix")
 		}
 
+		// Decompress
+		db, de := this._decompress(tbuf.Bytes())
+		if de != nil {
+			log.Errorf("Decompress error: %s", de)
+			panic("Failed to decompress")
+		}
+
 		// Read message
-		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), tbuf.Bytes())
+		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
 
 		// New buffer
 		tbuf = new(bytes.Buffer)
@@ -220,8 +230,11 @@ func (this *NetworkTransport) _connect(node string) {
 
 // Send message
 func (this *NetworkTransport) _send(node string, b []byte) error {
+	// Lock until done
 	this.connectionsMux.Lock()
 	defer this.connectionsMux.Unlock()
+
+	// Are we connected?
 	if this.connections[node] == nil {
 		// No connection
 		errorMsg := fmt.Sprintf("No connection found to %s for %s", node, this.serviceName)
@@ -233,17 +246,30 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		// Return error
 		return errors.New(errorMsg)
 	}
+	// get connection
 	var connection *TransportConnection = this.connections[node]
 	var conn net.Conn = *connection.conn
-	_, err := conn.Write(b)
+
+	// Compress
+	bc, ce := this._compress(b)
+	if ce != nil {
+		panic("Failed to compress")
+	}
+
+	// Write data
+	_, err := conn.Write(bc)
+
+	// Write magic footer
 	conn.Write([]byte{'\r', '\n', 'X', 'Y', 'Z'})
+
+	// Validate
 	if err != nil {
 		log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
 
 		// Reset connection
 		delete(this.connections, node)
 	} else {
-		log.Infof("Written %d %s bytes to %s", len(b), this.serviceName, node)
+		log.Infof("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
 	}
 	return err
 }
@@ -272,6 +298,11 @@ func newNetworkTransport(protocol string, serviceName string, port int, receiveB
 		isConnecting:     make(map[string]bool),
 		receiveBufferLen: receiveBufferLen,
 	}
+
+	// Compression
+	gzip := newTransportGzip()
+	g._compress = gzip._compress
+	g._decompress = gzip._decompress
 
 	return g
 }
