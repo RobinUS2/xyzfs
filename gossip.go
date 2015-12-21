@@ -36,6 +36,13 @@ func (this *Gossip) _send(node string, msg *GossipMessage) error {
 	return this.transport._send(node, msg.Bytes())
 }
 
+// Get nodes
+func (this *Gossip) GetNodeStates() map[string]*GossipNodeState {
+	this.nodesMux.RLock()
+	defer this.nodesMux.RUnlock()
+	return this.nodes
+}
+
 // Get node state
 func (this *Gossip) GetNodeState(node string) *GossipNodeState {
 	var s *GossipNodeState

@@ -13,6 +13,8 @@ go get "github.com/klauspost/reedsolomon"
 go get "github.com/Sirupsen/logrus"
 go get "github.com/willf/bloom"
 go get "github.com/spaolacci/murmur3"
+go get "github.com/julienschmidt/httprouter"
+go get "github.com/RobinUS2/golang-jresp"
 
 case "$1" in
 	docker)

@@ -75,6 +75,10 @@ func (this *Shard) Persist() {
 		// @tood handle better
 		panic(err)
 	}
+
+	// Send full index over wire
+	// @todo Remove, this is should be covered by the distributed index mutations
+	binaryTransport._broadcastShardIndex(this)
 }
 
 // Load from disk

@@ -12,6 +12,14 @@ func (this *BinaryTransport) _sendShardIndices(node string) {
 	}
 }
 
+// Broadcast single shard index
+func (this *BinaryTransport) _broadcastShardIndex(shard *Shard) {
+	// To all nodes
+	for _, ns := range gossip.GetNodeStates() {
+		this._sendShardIndex(shard, ns.Node)
+	}
+}
+
 // Send single shard
 func (this *BinaryTransport) _sendShardIndex(shard *Shard, node string) {
 	log.Infof("Sending local shard index %s (%s) to %s", shard.IdStr(), uuidToString(shard.shardIndex.ShardId), node)

@@ -26,6 +26,7 @@ type Conf struct {
 	BinaryPort                int
 	BinaryUdpPort             int
 	BinaryTransportReadBuffer int
+	HttpDebug                 bool
 }
 
 type DatastoreConf struct {
@@ -59,6 +60,9 @@ func newConf() *Conf {
 
 		// Binary
 		BinaryTransportReadBuffer: 32 * 1024 * 1024,
+
+		// HTTP Debug
+		HttpDebug: true,
 	}
 
 	if len(confSeedFlag) > 0 {
