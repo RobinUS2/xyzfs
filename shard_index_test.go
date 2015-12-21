@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -38,5 +39,12 @@ func TestShardIndex(t *testing.T) {
 	// Should now be in there
 	if idx2.Test("test") == false {
 		t.Error("Empty filter must be populated after loading bytes")
+	}
+}
+
+func BenchmarkShardIndexWrite(b *testing.B) {
+	idx := newShardIndex()
+	for n := 0; n < b.N; n++ {
+		idx.Add(fmt.Sprintf("%d", n))
 	}
 }
