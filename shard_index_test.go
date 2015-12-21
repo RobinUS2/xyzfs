@@ -48,3 +48,15 @@ func BenchmarkShardIndexWrite(b *testing.B) {
 		idx.Add(fmt.Sprintf("%d", n))
 	}
 }
+
+func BenchmarkShardIndexRead(b *testing.B) {
+	idx := newShardIndex()
+	idx.Add("asdf")
+	for n := 0; n < b.N; n++ {
+		if n%3 == 0 {
+			idx.Test("asdf")
+		} else {
+			idx.Test("not")
+		}
+	}
+}
