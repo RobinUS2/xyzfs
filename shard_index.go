@@ -16,10 +16,11 @@ type ShardIndex struct {
 }
 
 // Add to index
-func (this *ShardIndex) Add(fullName string) {
+func (this *ShardIndex) Add(fullName string) bool {
 	this.mux.Lock()
 	this.bloomFilter.Add([]byte(fullName))
 	this.mux.Unlock()
+	return true
 }
 
 // Test index contains this file

@@ -42,21 +42,29 @@ func TestShardIndex(t *testing.T) {
 	}
 }
 
+var writeRes bool = false
+
 func BenchmarkShardIndexWrite(b *testing.B) {
+	var res bool
 	idx := newShardIndex()
 	for n := 0; n < b.N; n++ {
-		idx.Add(fmt.Sprintf("%d", n))
+		res = idx.Add(fmt.Sprintf("%d", n))
 	}
+	writeRes = res
 }
+
+var readRes bool = false
 
 func BenchmarkShardIndexRead(b *testing.B) {
 	idx := newShardIndex()
 	idx.Add("asdf")
+	var res bool
 	for n := 0; n < b.N; n++ {
 		if n%3 == 0 {
-			idx.Test("asdf")
+			res = idx.Test("asdf")
 		} else {
-			idx.Test("not")
+			res = idx.Test("not")
 		}
 	}
+	readRes = res
 }
