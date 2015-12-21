@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"sync"
 )
 
@@ -12,10 +11,23 @@ type FileLocator struct {
 }
 
 // Locate
-func (this *FileLocator) _locate(ds *Datastore, fullName string) (*Shard, error) {
+func (this *FileLocator) _locate(ds *Datastore, fullName string) ([]*ShardIndex, error) {
 	// @todo scan all local bloom filters (local shards + distributed shards) (this should cover 99.9% of traffic under regular operations, includes nodes down)
 	// @todo IF NOT FOUND => convert name to murmur3 => determine primary bloomfilter index quorum, send RPC call, determine valid quorum (this step is done in order to prevent invalid data on a single node)
-	return nil, errors.New("Not implemented")
+
+	// Scan registered bloom filters
+	// @todo make concurrent
+	var res []*ShardIndex = make([]*ShardIndex, 0)
+	this.remoteShardIndicesMux.RLock()
+	for _, idx := range this.remoteShardIndices {
+		// Is this file in here? Can give false positives
+		if idx.Test(fullName) {
+			res = append(res, idx)
+		}
+	}
+	this.remoteShardIndicesMux.RUnlock()
+
+	return res, nil
 }
 
 // @todo implement populate the remote shard inidices
