@@ -36,7 +36,12 @@ func (this *RestServer) start() {
 		// Debug handlers
 		if conf.HttpDebug {
 			log.Warn("HTTP debug endpoints are ON")
+
+			// File locator
 			router.GET("/debug/file-locator/shards", GetDebugFileLocatorShards)
+
+			// Gossip
+			router.GET("/debug/gossip/nodes", GetDebugGossipNodes)
 		}
 
 		// Start server

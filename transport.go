@@ -269,7 +269,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		// Reset connection
 		delete(this.connections, node)
 	} else {
-		log.Infof("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
+		log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
 	}
 	return err
 }
