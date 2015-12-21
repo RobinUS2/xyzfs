@@ -27,13 +27,14 @@ func GetDebugFileLocatorShards(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	// Locate
-	res, e := datastore.LocateFile(file)
+	res, scanCount, e := datastore.LocateFile(file)
 	if e != nil {
 		jr.Error(fmt.Sprintf("%s", e))
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 		return
 	}
 
+	// Shard IDs
 	var shardIds []string = make([]string, 0)
 	for _, shardIdx := range res {
 		shardIds = append(shardIds, uuidToString(shardIdx.ShardId))
@@ -41,6 +42,7 @@ func GetDebugFileLocatorShards(w http.ResponseWriter, r *http.Request, _ httprou
 
 	// Response
 	jr.Set("shards", shardIds)
+	jr.Set("shards_scanned", scanCount)
 	jr.OK()
 	fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 }

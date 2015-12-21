@@ -31,10 +31,13 @@ func TestFileLocator(t *testing.T) {
 	}
 
 	// Locate file
-	res, e := l._locate(nil, fileName)
+	res, scanCount, e := l._locate(nil, fileName)
 	panicErr(e)
 	if len(res) != 5 {
 		log.Error("File should have been located in 5 shard indices")
+	}
+	if scanCount != 1000 {
+		log.Error("Scan count wrong")
 	}
 
 	// Validate indices
@@ -52,7 +55,7 @@ func TestFileLocator(t *testing.T) {
 	}
 
 	// Locate non-existant file
-	resNonExist, errNonExist := l._locate(nil, fullNameNotExisting)
+	resNonExist, _, errNonExist := l._locate(nil, fullNameNotExisting)
 	if resNonExist != nil || errNonExist == nil {
 		log.Error("Found non-existing file")
 	}

@@ -13,7 +13,7 @@ type FileLocator struct {
 }
 
 // Locate
-func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*ShardIndex, error) {
+func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*ShardIndex, uint32, error) {
 	// Result placeholder
 	var res []*ShardIndex = make([]*ShardIndex, 0)
 	var scanCount uint32 = 0
@@ -51,11 +51,11 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 
 	// Not found?
 	if len(res) == 0 {
-		return nil, errors.New(fmt.Sprintf("File %s not found after scanning %d indices", fullName, scanCount))
+		return nil, scanCount, errors.New(fmt.Sprintf("File %s not found after scanning %d indices", fullName, scanCount))
 	}
 
 	// Found :)
-	return res, nil
+	return res, scanCount, nil
 }
 
 // Load index

@@ -22,7 +22,7 @@ func (this *Datastore) Volumes() []*Volume {
 }
 
 // Locate file
-func (this *Datastore) LocateFile(fullName string) ([]*ShardIndex, error) {
+func (this *Datastore) LocateFile(fullName string) ([]*ShardIndex, uint32, error) {
 	return this.fileLocator._locate(this, fullName)
 }
 
