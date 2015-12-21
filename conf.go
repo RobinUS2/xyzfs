@@ -46,8 +46,8 @@ func newConf() *Conf {
 		ShardSizeInBytes:     1024 * 1024 * 32,
 
 		// Permission
-		UnixFolderPermissions: 0655,
-		UnixFilePermissions:   0655,
+		UnixFolderPermissions: 0755,
+		UnixFilePermissions:   0644,
 
 		// Storage
 		MetaBasePath:   "/xyzfs/meta",
