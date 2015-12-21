@@ -30,14 +30,28 @@ func newBinaryTransport() *BinaryTransport {
 	}
 
 	// Binary on message
-	b.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
-		// @todo implement
-		log.Infof("Received binary TCP message", b)
+	b.transport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) {
+		msg := &BinaryTransportMessage{}
+		msg.FromBytes(by)
+
+		log.Infof("Received binary TCP message %d bytes", len(by))
+
+		switch msg.Type {
+		// Shard index
+		case ShardIdxBinaryTransportMessageType:
+			b._receiveShardIndex(cmeta, msg)
+			break
+
+			// Unknown
+		default:
+			log.Warnf("Received unknown binary TCP message %v", msg)
+			break
+		}
 	}
 
 	// Binary on UDP message
-	b.udpTransport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
-		log.Infof("Received binary UDP message", b)
+	b.udpTransport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) {
+		log.Infof("Received binary UDP message %d bytes", len(by))
 		// @todo implement
 	}
 

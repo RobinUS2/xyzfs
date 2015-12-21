@@ -6,7 +6,8 @@ import (
 )
 
 func TestShardIndex(t *testing.T) {
-	idx := newShardIndex()
+	id := randomUuid()
+	idx := newShardIndex(id)
 
 	// Test empty
 	if idx.Test("test") == true {
@@ -28,7 +29,7 @@ func TestShardIndex(t *testing.T) {
 	}
 
 	// New empty filter
-	idx2 := newShardIndex()
+	idx2 := newShardIndex(randomUuid())
 	if idx2.Test("test") == true {
 		t.Error("Empty filter must be empty")
 	}
@@ -40,13 +41,18 @@ func TestShardIndex(t *testing.T) {
 	if idx2.Test("test") == false {
 		t.Error("Empty filter must be populated after loading bytes")
 	}
+
+	// Id recovered
+	if uuidToString(idx2.ShardId) != uuidToString(idx.ShardId) {
+		t.Errorf("Failed to load shard id from bytes %s %s", uuidToString(idx2.ShardId), uuidToString(idx.ShardId))
+	}
 }
 
 var writeRes bool = false
 
 func BenchmarkShardIndexWrite(b *testing.B) {
 	var res bool
-	idx := newShardIndex()
+	idx := newShardIndex(randomUuid())
 	for n := 0; n < b.N; n++ {
 		res = idx.Add(fmt.Sprintf("%d", n))
 	}
@@ -56,7 +62,7 @@ func BenchmarkShardIndexWrite(b *testing.B) {
 var readRes bool = false
 
 func BenchmarkShardIndexRead(b *testing.B) {
-	idx := newShardIndex()
+	idx := newShardIndex(randomUuid())
 	idx.Add("asdf")
 	var res bool
 	for n := 0; n < b.N; n++ {

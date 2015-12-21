@@ -29,6 +29,9 @@ const (
 
 // To bytes
 func (this *GossipMessage) Bytes() []byte {
+	if this.Type < 1 || this.Len < 1 {
+		panic("Can not convert empty message to bytes")
+	}
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, this.Version) // meta version
 	binary.Write(buf, binary.BigEndian, this.Type)    // type

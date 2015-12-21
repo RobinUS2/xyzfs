@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -95,10 +96,12 @@ func (this *NetworkTransport) _listenUdp() {
 // Handle connection
 func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	// Read bytes
-	tbuf := make([]byte, this.receiveBufferLen)
+	// tbuf := make([]byte, this.receiveBufferLen)
 
 	for {
-		n, err := conn.Read(tbuf)
+		connbuf := bufio.NewReader(conn)
+		by, err := connbuf.ReadBytes('\n')
+		// n, err := conn.Read(tbuf)
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
@@ -108,7 +111,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		}
 
 		// Read message
-		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), tbuf[0:n])
+		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), by)
 	}
 }
 
@@ -202,6 +205,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	var connection *TransportConnection = this.connections[node]
 	var conn net.Conn = *connection.conn
 	_, err := conn.Write(b)
+	conn.Write([]byte("\n"))
 	if err != nil {
 		log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
 

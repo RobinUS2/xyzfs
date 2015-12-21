@@ -98,7 +98,7 @@ func (this *Shard) _fromBinaryFormat() {
 		panic("Failed to read index bytes")
 	}
 	log.Debugf("Read %d index bytes", indexBytesRead)
-	this.shardIndex = newShardIndex()
+	this.shardIndex = newShardIndex(this.Id)
 	this.shardIndex.FromBytes(indexBytes)
 	indexBytes = nil
 	if this.shardIndex.bloomFilter == nil {
