@@ -13,6 +13,9 @@ import (
 // Network transport layer
 
 type NetworkTransport struct {
+	// Generic mutex
+	mux sync.RWMutex
+	// Config
 	protocol         string
 	port             int
 	serviceName      string
@@ -47,7 +50,9 @@ func (this *NetworkTransport) listen() {
 // Listen TCP
 func (this *NetworkTransport) _listenTcp() {
 	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
+	this.mux.Lock()
 	this.listenAddr = ln.Addr().String()
+	this.mux.Unlock()
 	if err != nil {
 		panicErr(err)
 	}
@@ -67,7 +72,9 @@ func (this *NetworkTransport) _listenUdp() {
 	panicErr(err)
 
 	ln, err := net.ListenUDP(this.protocol, serverAddr)
+	this.mux.Lock()
 	this.listenAddr = ln.LocalAddr().String()
+	this.mux.Unlock()
 	if err != nil {
 		panicErr(err)
 	}
@@ -127,7 +134,9 @@ func (this *NetworkTransport) _connect(node string) {
 	this.connectionsMux.RUnlock()
 
 	// Do not connect to ourselves
+	this.mux.RLock()
 	listenSplit := strings.Split(this.listenAddr, ":")
+	this.mux.RUnlock()
 	if listenSplit[0] == node {
 		log.Infof("Not connecting to address (%s) on which are are listening ourselves", listenSplit[0])
 		return
