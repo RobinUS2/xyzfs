@@ -10,6 +10,7 @@ func TestFileLocator(t *testing.T) {
 
 	// Filename
 	fileName := "test.txt"
+	fullNameNotExisting := "file_not_found.txt"
 
 	// Create few indices
 	var expectedIndices map[string]bool = make(map[string]bool, 0)
@@ -46,7 +47,13 @@ func TestFileLocator(t *testing.T) {
 			}
 		}
 		if !found {
-			panic("Not able to find shard indice in map")
+			log.Error("Not able to find shard indice in map")
 		}
+	}
+
+	// Locate non-existant file
+	resNonExist, errNonExist := l._locate(nil, fullNameNotExisting)
+	if resNonExist != nil || errNonExist == nil {
+		log.Error("Found non-existing file")
 	}
 }
