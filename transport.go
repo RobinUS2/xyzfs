@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -97,11 +98,14 @@ func (this *NetworkTransport) _listenUdp() {
 func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	// Read bytes
 	// tbuf := make([]byte, this.receiveBufferLen)
+	tbuf := new(bytes.Buffer)
+
+	// Reader
+	connbuf := bufio.NewReader(conn)
 
 	for {
-		connbuf := bufio.NewReader(conn)
-		by, err := connbuf.ReadBytes('\n')
-		// n, err := conn.Read(tbuf)
+		// Reader until first \r
+		by, err := connbuf.ReadBytes('\r')
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
@@ -110,8 +114,35 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			break
 		}
 
+		// Write to buffer
+		tbuf.Write(by)
+
+		// Is this the end?
+		byTerminator, _ := connbuf.ReadByte()
+		if byTerminator != '\n' {
+			// Reverse
+			connbuf.UnreadByte()
+
+			// Continue reading rest
+			continue
+		}
+
+		// Validate final
+		if val, _ := connbuf.ReadByte(); val != 'X' {
+			panic("Missed X from magic suffix")
+		}
+		if val, _ := connbuf.ReadByte(); val != 'Y' {
+			panic("Missed Y from magic suffix")
+		}
+		if val, _ := connbuf.ReadByte(); val != 'Z' {
+			panic("Missed Z from magic suffix")
+		}
+
 		// Read message
-		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), by)
+		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), tbuf.Bytes())
+
+		// New buffer
+		tbuf = new(bytes.Buffer)
 	}
 }
 
@@ -205,7 +236,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	var connection *TransportConnection = this.connections[node]
 	var conn net.Conn = *connection.conn
 	_, err := conn.Write(b)
-	conn.Write([]byte("\n"))
+	conn.Write([]byte{'\r', '\n', 'X', 'Y', 'Z'})
 	if err != nil {
 		log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
 
