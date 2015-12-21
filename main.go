@@ -29,6 +29,7 @@ func startApplication() {
 
 		// New runtime
 		runtime = newRuntime()
+		log.Infof("Runtime id is %s", runtime.Id)
 
 		// Binary transport
 		binaryTransport = newBinaryTransport()
