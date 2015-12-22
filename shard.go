@@ -45,6 +45,10 @@ type Shard struct {
 	// Is loaded?
 	isLoaded    bool
 	isLoadedMux sync.RWMutex
+
+	// Is flushed? (is this written to disk?)
+	isFlushed    bool
+	isFlushedMux sync.RWMutex
 }
 
 // Buffer mode
@@ -70,7 +74,13 @@ func (this *Shard) Contents() *bytes.Buffer {
 
 // Persist
 func (this *Shard) Persist() {
-	// @todo Only persist if this one is dirty / not-flushed before
+	// Only persist if this one is dirty / not-flushed before
+	this.isFlushedMux.Lock()
+	defer this.isFlushedMux.Unlock()
+	if this.isFlushed {
+		log.Debugf("Not persisting shard %s as this is already flushed")
+		return
+	}
 
 	// Make sure block folder is prepared
 	this.Block().PrepareFolder()
@@ -87,6 +97,9 @@ func (this *Shard) Persist() {
 	// Send full index over wire
 	// @todo Remove, this is should be covered by the distributed index mutations
 	binaryTransport._broadcastShardIndex(this)
+
+	// Done
+	this.isFlushed = true
 }
 
 // Load from disk
@@ -205,6 +218,11 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	this.bufferMode = WriteShardBufferMode
 	this.bufferModeMux.Unlock()
 
+	// We should flush again
+	this.isFlushedMux.Lock()
+	this.isFlushed = false
+	this.isFlushedMux.Unlock()
+
 	// Calculate length
 	fileLen := uint32(len(b))
 
@@ -259,5 +277,6 @@ func newShard(b *Block) *Shard {
 		shardMeta:     newShardMeta(),
 		shardIndex:    newShardIndex(id),
 		shardFileMeta: newShardFileMeta(),
+		isFlushed:     false,
 	}
 }
