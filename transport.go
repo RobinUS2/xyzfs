@@ -242,11 +242,12 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		log.Warn(errorMsg)
 
 		// We will try to open one for next time
-		go this._connect(node)
+		go this._connect(node) // async
 
 		// Return error
-		return errors.New(errorMsg)
+		return errors.New(errorMsg) //async, direct error
 	}
+
 	// get connection
 	var connection *TransportConnection = this.connections[node]
 	var conn net.Conn = *connection.conn

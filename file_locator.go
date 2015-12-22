@@ -77,6 +77,14 @@ func (this *FileLocator) LoadIndex(node string, shardId []byte, idx *ShardIndex)
 	this.remoteShardIndices[k] = idx
 	this.remoteShardIndicesMux.Unlock()
 
+	// Register mapping (non-local)
+	this._addShardNodeMapping(shardId, node, false)
+}
+
+// Add shard=>node mapping
+func (this *FileLocator) _addShardNodeMapping(shardId []byte, node string, localShard bool) {
+	k := uuidToString(shardId)
+
 	// Add to map
 	this.shardLocationsMux.Lock()
 
@@ -96,11 +104,27 @@ func (this *FileLocator) LoadIndex(node string, shardId []byte, idx *ShardIndex)
 
 	// Found?
 	if alreadyExisting == false {
-		this.shardLocations[k] = append(this.shardLocations[k], newShardLocation(node))
+		this.shardLocations[k] = append(this.shardLocations[k], newShardLocation(node, localShard))
 	}
 
 	// Unlock
 	this.shardLocationsMux.Unlock()
+}
+
+// Get shard locations
+func (this *FileLocator) ShardLocations() map[string][]*ShardLocation {
+
+	// Local shards
+	for _, volume := range datastore.Volumes() {
+		for _, shard := range volume.Shards() {
+			// Register local mapping
+			this._addShardNodeMapping(shard.Id, "localhost", true)
+		}
+	}
+
+	this.shardLocationsMux.RLock()
+	defer this.shardLocationsMux.RUnlock()
+	return this.shardLocations
 }
 
 // New

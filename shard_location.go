@@ -1,11 +1,13 @@
 package main
 
 type ShardLocation struct {
-	Node string
+	Node  string
+	Local bool
 }
 
-func newShardLocation(node string) *ShardLocation {
+func newShardLocation(node string, local bool) *ShardLocation {
 	return &ShardLocation{
-		Node: node,
+		Node:  node,
+		Local: local,
 	}
 }
