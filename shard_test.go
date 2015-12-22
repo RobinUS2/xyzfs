@@ -134,7 +134,7 @@ func TestNewFile(t *testing.T) {
 	// Read file by name
 	fileAbytes, fileAerr := shard.ReadFile(fileMeta.FullName)
 	if fileAerr != nil {
-		t.Errorf("Unexpected error while reading file: ", fileAerr)
+		t.Errorf("Unexpected error while reading file: %s", fileAerr)
 	}
 	if fileAbytes == nil || len(fileAbytes) < 1 {
 		t.Error("No bytes from read file")
