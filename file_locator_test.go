@@ -27,7 +27,7 @@ func TestFileLocator(t *testing.T) {
 		}
 
 		// Into index
-		l.LoadIndex(idx.ShardId, idx)
+		l.LoadIndex("localhost", idx.ShardId, idx)
 	}
 
 	// Locate file
