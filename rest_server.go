@@ -49,6 +49,9 @@ func (this *RestServer) start() {
 			router.PUT("/debug/block/persist", PutDebugBlockPersist)
 		}
 
+		// File
+		router.POST("/file", PostFile)
+
 		// Start server
 		log.Infof("Starting REST HTTP server on port TCP/%d", conf.HttpPort)
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", conf.HttpPort), router))
