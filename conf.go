@@ -44,7 +44,7 @@ func newConf() *Conf {
 		// Shards
 		DataShardsPerBlock:   10,
 		ParityShardsPerBlock: 3,
-		ShardSizeInBytes:     1024 * 1024 * 32,
+		ShardSizeInBytes:     1024, /** 1024 * 32*/
 
 		// Permission
 		UnixFolderPermissions: 0755,

@@ -145,7 +145,7 @@ func TestNewFile(t *testing.T) {
 
 	// Read non-existing file
 	nonExistingBytes, nonExistingErr := shard.ReadFile("/non-existing")
-	if nonExistingBytes != nil || len(fileAbytes) > 0 || nonExistingErr == nil {
+	if nonExistingBytes != nil || len(nonExistingBytes) > 0 || nonExistingErr == nil {
 		t.Error("Reading non-existing file should throw error without bytes")
 	}
 }

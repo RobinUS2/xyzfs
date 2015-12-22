@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -58,7 +59,7 @@ const (
 func (this *Shard) Contents() *bytes.Buffer {
 	// @todo read from disk
 	if this.contents == nil {
-		this.contents = bytes.NewBuffer(make([]byte, conf.ShardSizeInBytes))
+		this.contents = bytes.NewBuffer(make([]byte, 0))
 	}
 	return this.contents
 }
@@ -134,6 +135,8 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 
 // Read file bytes
 func (this *Shard) ReadFile(filename string) ([]byte, error) {
+	// @todo support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
+
 	// Get meta
 	meta := this.shardFileMeta.GetByName(filename)
 
@@ -144,7 +147,34 @@ func (this *Shard) ReadFile(filename string) ([]byte, error) {
 
 	log.Infof("Start offset %d len %d", meta.StartOffset, meta.Size)
 
-	return nil, nil
+	// Open file
+	f, err := this._openFile()
+	defer f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// Seek to start of file
+	f.Seek(int64(meta.StartOffset), 0)
+
+	// New reader
+	buf := bufio.NewReader(f)
+
+	// Buffer
+	fileBytes := make([]byte, int(meta.Size))
+
+	// Read
+	fileBytesRead, readE := buf.Read(fileBytes)
+	if readE != nil {
+		return nil, readE
+	}
+
+	// Validate size and read
+	if int(meta.Size) != fileBytesRead {
+		return nil, errors.New("File bytes read mismatch")
+	}
+
+	return fileBytes, nil
 }
 
 // Add file

@@ -10,6 +10,7 @@ import (
 
 // Byte writer to a shard
 
+// Write in-memory to bytes for disk
 func (this *Shard) _toBinaryFormat() []byte {
 	buf := new(bytes.Buffer)
 
@@ -23,6 +24,7 @@ func (this *Shard) _toBinaryFormat() []byte {
 	if this.contents != nil {
 		b := this.contents.Bytes()
 		this.shardMeta.SetContentsLength(uint32(len(b)))
+		log.Infof("%v", b)
 		buf.Write(b)
 		b = nil
 	} else {
@@ -52,9 +54,16 @@ func (this *Shard) _toBinaryFormat() []byte {
 	return buf.Bytes()
 }
 
+// Open file
+func (this *Shard) _openFile() (*os.File, error) {
+	return os.Open(this.FullPath())
+}
+
+// Read to memory structure from binary on disk
 func (this *Shard) _fromBinaryFormat() (bool, error) {
 	// Open file
-	f, err := os.Open(this.FullPath())
+	f, err := this._openFile()
+	defer f.Close()
 	if err != nil {
 		return false, errors.New("File not found")
 	}

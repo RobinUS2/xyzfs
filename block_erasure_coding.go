@@ -16,10 +16,12 @@ func (this *Block) ErasureEncoding() {
 	// Build data array
 	var data [][]byte = make([][]byte, len(this.DataShards)+len(this.ParityShards))
 	for i, s := range this.DataShards {
-		data[i] = s.Contents().Bytes()
+		buf := s.Contents()
+		data[i] = padByteArrZeros(buf.Bytes(), conf.ShardSizeInBytes)
 	}
 	for ip, is := range this.ParityShards {
-		data[len(this.DataShards)+ip] = is.Contents().Bytes()
+		buf := is.Contents()
+		data[len(this.DataShards)+ip] = padByteArrZeros(buf.Bytes(), conf.ShardSizeInBytes)
 	}
 
 	// Encode
@@ -32,4 +34,11 @@ func (this *Block) ErasureEncoding() {
 	for i := len(this.DataShards); i < len(this.ParityShards); i++ {
 		this.ParityShards[i].SetContents(bytes.NewBuffer(data[i]))
 	}
+}
+
+// Pad zero bytes
+func padByteArrZeros(in []byte, n int) []byte {
+	padlen := n - len(in)
+	padding := bytes.Repeat([]byte{byte(0)}, padlen)
+	return append(in, padding...)
 }

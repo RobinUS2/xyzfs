@@ -19,7 +19,8 @@ func TestNewBlock(t *testing.T) {
 	preHash := make([]string, 10)
 	for i, ds := range b.DataShards {
 		h := md5.New()
-		h.Write(ds.Contents().Bytes())
+		buf := ds.Contents()
+		h.Write(padByteArrZeros(buf.Bytes(), conf.ShardSizeInBytes))
 		preHash[i] = fmt.Sprintf("%x", h.Sum(nil))
 	}
 
@@ -29,7 +30,8 @@ func TestNewBlock(t *testing.T) {
 	// Validate hashes after are equal, meaning the data has not changed
 	for i, ds := range b.DataShards {
 		h := md5.New()
-		h.Write(ds.Contents().Bytes())
+		buf := ds.Contents()
+		h.Write(padByteArrZeros(buf.Bytes(), conf.ShardSizeInBytes))
 		if preHash[i] != fmt.Sprintf("%x", h.Sum(nil)) {
 			panic("Erasure encoding has changed file contents of data partition")
 		}
