@@ -27,10 +27,16 @@ func PostFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	// @todo read real body data and validate
+	// Read body (supports GZIP)
+	b, be := readBodyBytes(r)
+	if be != nil {
+		jr.Error(fmt.Sprintf("%s", be))
+		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
+		return
+	}
 
 	// Add file
-	res, resE := datastore.AddFile(file, []byte("Test data"))
+	res, resE := datastore.AddFile(file, b)
 	if resE != nil {
 		jr.Error(fmt.Sprintf("%s", resE))
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
