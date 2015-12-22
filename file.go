@@ -12,6 +12,7 @@ type FileMeta struct {
 	Created     uint32 // Unix timestamp
 	Size        uint32 // Length of file in bytes
 	StartOffset uint32 // Offset in bytes to start reading contents
+	Checksum    uint32 // Crc 32 (Castagnoli)
 }
 
 // Get murmur hash

@@ -5,13 +5,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	"sync"
 )
 
 // Shard is a partial piece of data in a block
-// @todo Store CRC32 checksum in meta file to validate content of shard
 
+// CRC table
+var crcTable *crc32.Table = crc32.MakeTable(crc32.Castagnoli)
+
+// Shard object
 type Shard struct {
 	Id         []byte // Unique UUID
 	BlockIndex uint   // Numeric index (from to 0 to number_of_data_shards+number_of_parity_shards), used to align the shards before a restore using Reed Solomon
@@ -179,6 +183,12 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 		return nil, errors.New("File bytes read mismatch"), false
 	}
 
+	// Validate CRC
+	readCrc := crc32.Checksum(fileBytes, crcTable)
+	if readCrc != meta.Checksum {
+		return nil, errors.New(fmt.Sprintf("CRC checksum mismatch, was %d expected %d", readCrc, meta.Checksum)), false
+	}
+
 	return fileBytes, nil, false
 }
 
@@ -202,6 +212,9 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	// Update metadata
 	f.Size = fileLen
 	f.StartOffset = this.contentsOffset
+
+	// File meta checksum
+	f.Checksum = crc32.Checksum(b, crcTable)
 
 	// Write contents to buffer
 	this.Contents().Write(b)
