@@ -46,3 +46,21 @@ func GetDebugFileLocatorShards(w http.ResponseWriter, r *http.Request, _ httprou
 	jr.OK()
 	fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 }
+
+func GetDebugFileLocatorShardLocations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Response object
+	jr := jresp.NewJsonResp()
+
+	// Auth
+	if !restServer.auth(r) {
+		restServer.notAuthorized(w)
+		return
+	}
+
+	// Response
+	datastore.fileLocator.remoteShardIndicesMux.RLock()
+	jr.Set("shards", datastore.fileLocator.remoteShardIndices)
+	datastore.fileLocator.remoteShardIndicesMux.RUnlock()
+	jr.OK()
+	fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
+}

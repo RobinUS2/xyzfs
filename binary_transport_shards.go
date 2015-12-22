@@ -43,5 +43,5 @@ func (this *BinaryTransport) _receiveShardIndex(cmeta *TransportConnectionMeta, 
 	s.FromBytes(msg.Data)
 
 	// Load index
-	datastore.fileLocator.LoadIndex(s.ShardId, s)
+	datastore.fileLocator.LoadIndex(cmeta.GetNode(), s.ShardId, s)
 }

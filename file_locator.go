@@ -8,6 +8,11 @@ import (
 
 // The file locator helps to find files in the distributed datastore
 type FileLocator struct {
+	// Shard to node map
+	shardLocationsMux sync.RWMutex
+	shardLocations    map[string][]*ShardLocation
+
+	// Shard indices
 	remoteShardIndicesMux sync.RWMutex
 	remoteShardIndices    map[string]*ShardIndex
 }
@@ -59,21 +64,49 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 }
 
 // Load index
-func (this *FileLocator) LoadIndex(shardId []byte, idx *ShardIndex) {
+func (this *FileLocator) LoadIndex(node string, shardId []byte, idx *ShardIndex) {
 	if len(shardId) != 16 {
-		log.Errorf("Received invalid remote shard index %v", shardId)
+		log.Errorf("Received invalid remote shard index %v from %s", shardId, node)
 		return
 	}
 	k := uuidToString(shardId)
-	log.Infof("Loading shard index %s into file locator", k)
+	log.Infof("Loading shard index %s from %s into file locator", k, node)
+
+	// Load shard index
 	this.remoteShardIndicesMux.Lock()
 	this.remoteShardIndices[k] = idx
 	this.remoteShardIndicesMux.Unlock()
+
+	// Add to map
+	this.shardLocationsMux.Lock()
+
+	// Prepare key with array
+	if this.shardLocations[k] == nil {
+		this.shardLocations[k] = make([]*ShardLocation, 0)
+	}
+
+	// Already in there?
+	var alreadyExisting bool = false
+	for _, l := range this.shardLocations[k] {
+		if l.Node == node {
+			alreadyExisting = true
+			break
+		}
+	}
+
+	// Found?
+	if alreadyExisting == false {
+		this.shardLocations[k] = append(this.shardLocations[k], newShardLocation(node))
+	}
+
+	// Unlock
+	this.shardLocationsMux.Unlock()
 }
 
 // New
 func newFileLocator() *FileLocator {
 	return &FileLocator{
 		remoteShardIndices: make(map[string]*ShardIndex),
+		shardLocations:     make(map[string][]*ShardLocation),
 	}
 }

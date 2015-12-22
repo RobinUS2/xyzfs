@@ -39,6 +39,7 @@ func (this *RestServer) start() {
 
 			// File locator
 			router.GET("/debug/file-locator/shards", GetDebugFileLocatorShards)
+			router.GET("/debug/file-locator/shard-locations", GetDebugFileLocatorShardLocations)
 
 			// Gossip
 			router.GET("/debug/gossip/nodes", GetDebugGossipNodes)
