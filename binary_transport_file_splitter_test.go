@@ -1,6 +1,7 @@
 package main
 
 import (
+	"hash/crc32"
 	"math/rand"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 		fileMeta := newFileMeta("text.txt")
 		data := make([]byte, i)
 		fileMeta.Size = uint32(len(data))
+		fileMeta.Checksum = crc32.Checksum(data, crcTable)
 
 		// Split
 		chunks := splitter.Split(fileMeta, data)
@@ -41,15 +43,38 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 		// Now, we're going to receive this file in chunks
 		receiver := newBinaryTransportFileReceiver()
 
+		// Duplicate message
+		if len(chunks) > 1 {
+			// Not first message
+			chunks = append(chunks, chunks[1])
+		}
+		// First message
+		chunks = append(chunks, chunks[0])
+
 		// Randomize to fake order
 		chunksShuffled := shuffle(chunks)
 
-		// Duplicate message
-		chunks = append(chunks, chunks[0])
-
 		// Add messages to receiver
+		var done bool = false
 		for _, chunk := range chunksShuffled {
-			receiver.AddMessage(chunk)
+			done = receiver.AddMessage(chunk)
+			if done {
+				break
+			}
+		}
+
+		// Done?
+		if done == false {
+			log.Error("Should have been done by now..")
+		}
+
+		// To bytes
+		b, be := receiver.Bytes()
+		if be != nil {
+			log.Errorf("Receiver to bytes has unexpected error: %s", be)
+		}
+		if len(b) != i {
+			log.Errorf("Receiver returned %d bytes instead of expted %d", len(b), i)
 		}
 	}
 }
