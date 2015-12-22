@@ -130,4 +130,22 @@ func TestNewFile(t *testing.T) {
 	if shard.shardFileMeta.FileMeta[1].StartOffset < 1 {
 		t.Error("Failed to read file meta start offset after shard load")
 	}
+
+	// Read file by name
+	fileAbytes, fileAerr := shard.ReadFile(fileMeta.FullName)
+	if fileAerr != nil {
+		t.Errorf("Unexpected error while reading file: ", fileAerr)
+	}
+	if fileAbytes == nil || len(fileAbytes) < 1 {
+		t.Error("No bytes from read file")
+	}
+	if string(fileAbytes) != "Hello File" {
+		t.Error("Read file contents are not correct")
+	}
+
+	// Read non-existing file
+	nonExistingBytes, nonExistingErr := shard.ReadFile("/non-existing")
+	if nonExistingBytes != nil || len(fileAbytes) > 0 || nonExistingErr == nil {
+		t.Error("Reading non-existing file should throw error without bytes")
+	}
 }

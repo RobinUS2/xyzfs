@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -124,6 +125,21 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 	this.contentsMux.Lock()
 	this.contents = b
 	this.contentsMux.Unlock()
+}
+
+// Read file bytes
+func (this *Shard) ReadFile(filename string) ([]byte, error) {
+	// Get meta
+	meta := this.shardFileMeta.GetByName(filename)
+
+	// Meta found?
+	if meta == nil {
+		return nil, errors.New("File not found")
+	}
+
+	log.Infof("Start offset %d len %d", meta.StartOffset, meta.Size)
+
+	return nil, nil
 }
 
 // Add file
