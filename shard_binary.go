@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"os"
 )
 
@@ -51,17 +52,17 @@ func (this *Shard) _toBinaryFormat() []byte {
 	return buf.Bytes()
 }
 
-func (this *Shard) _fromBinaryFormat() {
+func (this *Shard) _fromBinaryFormat() (bool, error) {
 	// Open file
 	f, err := os.Open(this.FullPath())
 	if err != nil {
-		panic("File not found")
+		return false, errors.New("File not found")
 	}
 
 	// File stat for length
 	fi, fierr := f.Stat()
 	if fierr != nil {
-		panic("Failed to stat file")
+		return false, errors.New("Failed to stat file")
 	}
 	flen := fi.Size()
 
@@ -124,4 +125,6 @@ func (this *Shard) _fromBinaryFormat() {
 	log.Debugf("Shard file meta %v", this.shardFileMeta)
 
 	// We don't read the file contents here, that's read from disk
+
+	return true, nil
 }

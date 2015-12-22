@@ -95,7 +95,12 @@ func (this *Shard) Load() {
 
 	// Load
 	log.Infof("Loading shard %s from disk in %s", this.IdStr(), this.FullPath())
-	this._fromBinaryFormat()
+	res, e := this._fromBinaryFormat()
+	if e != nil || !res {
+		log.Errorf("Failed to load shard %s from disk in %s: %s", this.IdStr(), this.FullPath(), e)
+		// Error
+		return
+	}
 
 	// Done
 	this.isLoaded = true
