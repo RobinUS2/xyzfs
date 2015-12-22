@@ -24,7 +24,6 @@ func (this *Shard) _toBinaryFormat() []byte {
 	if this.contents != nil {
 		b := this.contents.Bytes()
 		this.shardMeta.SetContentsLength(uint32(len(b)))
-		log.Infof("%v", b)
 		buf.Write(b)
 		b = nil
 	} else {
@@ -133,7 +132,8 @@ func (this *Shard) _fromBinaryFormat() (bool, error) {
 	}
 	log.Debugf("Shard file meta %v", this.shardFileMeta)
 
-	// We don't read the file contents here, that's read from disk
+	// We don't read the file contents here, that's read from disk, make sure it's empty to prevent race conditions
+	this.SetContents(nil)
 
 	return true, nil
 }

@@ -136,6 +136,11 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 // Read file bytes
 func (this *Shard) ReadFile(filename string) ([]byte, error) {
 	// @todo support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
+	this.contentsMux.RLock()
+	if this.contents != nil {
+		panic("Can not read file on shard that has data in-memory")
+	}
+	this.contentsMux.RUnlock()
 
 	// Get meta
 	meta := this.shardFileMeta.GetByName(filename)
@@ -144,8 +149,6 @@ func (this *Shard) ReadFile(filename string) ([]byte, error) {
 	if meta == nil {
 		return nil, errors.New("File not found")
 	}
-
-	log.Infof("Start offset %d len %d", meta.StartOffset, meta.Size)
 
 	// Open file
 	f, err := this._openFile()
