@@ -26,6 +26,18 @@ func (this *Datastore) LocateFile(fullName string) ([]*ShardIndex, uint32, error
 	return this.fileLocator._locate(this, fullName)
 }
 
+// Find block
+func (this *Datastore) BlockByIdStr(id string) *Block {
+	for _, volume := range this.Volumes() {
+		for _, block := range volume.Blocks() {
+			if id == block.IdStr() {
+				return block
+			}
+		}
+	}
+	return nil
+}
+
 // New block
 func (this *Datastore) NewBlock() *Block {
 	log.Info("Allocating new block")

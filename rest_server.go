@@ -43,6 +43,10 @@ func (this *RestServer) start() {
 
 			// Gossip
 			router.GET("/debug/gossip/nodes", GetDebugGossipNodes)
+
+			// Block
+			router.POST("/debug/block/allocate", PostDebugBlockAllocate)
+			router.PUT("/debug/block/persist", PutDebugBlockPersist)
 		}
 
 		// Start server

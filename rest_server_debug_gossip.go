@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// List all nodes gossip status
 func GetDebugGossipNodes(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Response object
 	jr := jresp.NewJsonResp()

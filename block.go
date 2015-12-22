@@ -44,7 +44,7 @@ func (this *Block) Volume() *Volume {
 }
 
 // Persist block to disk
-func (this *Block) Persist() {
+func (this *Block) Persist() bool {
 	log.Infof("Persisting block %s to disk", this.IdStr())
 
 	// Prepare folder
@@ -57,6 +57,8 @@ func (this *Block) Persist() {
 	for _, shard := range this.ParityShards {
 		shard.Persist()
 	}
+
+	return true
 }
 
 // Prepare folder

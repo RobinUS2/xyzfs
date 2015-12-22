@@ -70,6 +70,8 @@ func (this *Shard) Contents() *bytes.Buffer {
 
 // Persist
 func (this *Shard) Persist() {
+	// @todo Only persist if this one is dirty / not-flushed before
+
 	// Make sure block folder is prepared
 	this.Block().PrepareFolder()
 

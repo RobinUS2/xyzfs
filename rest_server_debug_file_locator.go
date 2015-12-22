@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// List shards for file
 func GetDebugFileLocatorShards(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Response object
 	jr := jresp.NewJsonResp()
@@ -47,6 +48,7 @@ func GetDebugFileLocatorShards(w http.ResponseWriter, r *http.Request, _ httprou
 	fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 }
 
+// Map from shard to node locations
 func GetDebugFileLocatorShardLocations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Response object
 	jr := jresp.NewJsonResp()
