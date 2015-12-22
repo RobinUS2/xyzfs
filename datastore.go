@@ -1,11 +1,16 @@
 package main
 
+import (
+	"errors"
+)
+
 // Data store
 
 var datastore *Datastore
 
 type Datastore struct {
 	fileLocator *FileLocator
+	nodeRouter  *NodeRouter
 }
 
 // Prepare data store for interactions
@@ -24,6 +29,21 @@ func (this *Datastore) Volumes() []*Volume {
 // Locate file
 func (this *Datastore) LocateFile(fullName string) ([]*ShardIndex, uint32, error) {
 	return this.fileLocator._locate(this, fullName)
+}
+
+// Add file
+func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
+	// Select node on where to execute this (it will be written there locally to a shard with space)
+	node, nodeSelectionErr := this.nodeRouter.PickNode()
+	if nodeSelectionErr != nil {
+		return false, nodeSelectionErr
+	}
+
+	log.Infof("Routing AddFile() request to %s", node)
+
+	// @todo Send data to that node over blocking RPC
+
+	return false, errors.New("Not implemented")
 }
 
 // Find block
@@ -73,6 +93,7 @@ func (this *Datastore) NewBlock() *Block {
 func newDatastore() *Datastore {
 	d := &Datastore{
 		fileLocator: newFileLocator(),
+		nodeRouter:  newNodeRouter(),
 	}
 	d.prepare()
 	return d
