@@ -134,27 +134,29 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 }
 
 // Read file bytes
-func (this *Shard) ReadFile(filename string) ([]byte, error) {
-	// @todo support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
-	this.contentsMux.RLock()
-	if this.contents != nil {
-		panic("Can not read file on shard that has data in-memory")
-	}
-	this.contentsMux.RUnlock()
-
+// file bytes - read error - from memory
+func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	// Get meta
 	meta := this.shardFileMeta.GetByName(filename)
 
 	// Meta found?
 	if meta == nil {
-		return nil, errors.New("File not found")
+		return nil, errors.New("File not found"), false
 	}
 
-	// Open file
+	// Support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
+	this.contentsMux.RLock()
+	if this.contents != nil {
+		defer this.contentsMux.RUnlock()
+		return this.contents.Bytes()[meta.StartOffset : meta.StartOffset+meta.Size], nil, true
+	}
+	this.contentsMux.RUnlock()
+
+	// Open file on disk for random read
 	f, err := this._openFile()
 	defer f.Close()
 	if err != nil {
-		return nil, err
+		return nil, err, false
 	}
 
 	// Seek to start of file
@@ -169,15 +171,15 @@ func (this *Shard) ReadFile(filename string) ([]byte, error) {
 	// Read
 	fileBytesRead, readE := buf.Read(fileBytes)
 	if readE != nil {
-		return nil, readE
+		return nil, readE, false
 	}
 
 	// Validate size and read
 	if int(meta.Size) != fileBytesRead {
-		return nil, errors.New("File bytes read mismatch")
+		return nil, errors.New("File bytes read mismatch"), false
 	}
 
-	return fileBytes, nil
+	return fileBytes, nil, false
 }
 
 // Add file

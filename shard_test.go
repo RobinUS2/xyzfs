@@ -83,6 +83,21 @@ func TestNewFile(t *testing.T) {
 		t.Error("Loaded shard file meta must be 2")
 	}
 
+	// Read file by name (from memory)
+	fileAbytes, fileAerr, fileAfromMemory := shard.ReadFile(fileMeta.FullName)
+	if fileAfromMemory == false {
+		t.Error("File must be read from memory buffers here")
+	}
+	if fileAerr != nil {
+		t.Errorf("Unexpected error while reading file: %s", fileAerr)
+	}
+	if fileAbytes == nil || len(fileAbytes) < 1 {
+		t.Error("No bytes from read file")
+	}
+	if string(fileAbytes) != "Hello File" {
+		t.Error("Read file contents are not correct")
+	}
+
 	// Persist shard to disk
 	shard.Persist()
 
@@ -131,8 +146,11 @@ func TestNewFile(t *testing.T) {
 		t.Error("Failed to read file meta start offset after shard load")
 	}
 
-	// Read file by name
-	fileAbytes, fileAerr := shard.ReadFile(fileMeta.FullName)
+	// Read file by name (from disk)
+	fileAbytes, fileAerr, fileAfromMemory = shard.ReadFile(fileMeta.FullName)
+	if fileAfromMemory {
+		t.Error("File must be read from disk here")
+	}
 	if fileAerr != nil {
 		t.Errorf("Unexpected error while reading file: %s", fileAerr)
 	}
@@ -144,7 +162,7 @@ func TestNewFile(t *testing.T) {
 	}
 
 	// Read non-existing file
-	nonExistingBytes, nonExistingErr := shard.ReadFile("/non-existing")
+	nonExistingBytes, nonExistingErr, _ := shard.ReadFile("/non-existing")
 	if nonExistingBytes != nil || len(nonExistingBytes) > 0 || nonExistingErr == nil {
 		t.Error("Reading non-existing file should throw error without bytes")
 	}
