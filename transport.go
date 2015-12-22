@@ -131,6 +131,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		}
 
 		// Validate final
+		// @todo Apply same principal with UnreadByte() as above
 		if val, _ := connbuf.ReadByte(); val != 'X' {
 			panic("Missed X from magic suffix")
 		}
