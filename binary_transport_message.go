@@ -23,6 +23,7 @@ type BinaryTransportMessageType uint32
 const (
 	EmptyBinaryTransportMessageType    BinaryTransportMessageType = iota // 0 = not set
 	ShardIdxBinaryTransportMessageType                                   // 1 = shard index
+	FileBinaryTransportMessageType                                       // 2 = file
 )
 
 // To bytes
