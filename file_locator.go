@@ -18,6 +18,7 @@ type FileLocator struct {
 }
 
 // Locate
+// @todo Support first-match returns mode, for faster reads
 func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*ShardIndex, uint32, error) {
 	// Result placeholder
 	var res []*ShardIndex = make([]*ShardIndex, 0)
@@ -28,7 +29,7 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 		for _, volume := range datastore.Volumes() {
 			for _, shard := range volume.Shards() {
 				scanCount++
-				if shard.shardIndex.Test(fullName) {
+				if shard.TestContainsFile(fullName) {
 					// Result found
 					res = append(res, shard.shardIndex)
 				}

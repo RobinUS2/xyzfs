@@ -66,6 +66,14 @@ const (
 	ReadyShardBufferMode                        // 4 = this is what an in-memory version looks like that is used for random access
 )
 
+// Contains file?
+func (this *Shard) TestContainsFile(fullName string) bool {
+	// Make sure loaded
+	this.Load()
+
+	return this.shardIndex.Test(fullName)
+}
+
 // Allocate space, returns true if
 func (this *Shard) AllocateCapacity(n uint32) bool {
 	// Lock
