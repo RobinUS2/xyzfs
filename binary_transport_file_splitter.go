@@ -9,7 +9,7 @@ import (
 
 // Binary transport of files
 // as files can be pretty big we transport them in chunks
-// chunk 0: transfer id (uint32) - chunk number (uint32) - file meta length (uint32) - actual file meta bytes - chunk count (uint32) - content chunk length (uint32) - content bytes
+// chunk 0: transfer id (uint32) - chunk number (uint32) - shard selected (byte: 0 or 1) - target shard id (16 bytes) - file meta length (uint32) - actual file meta bytes - chunk count (uint32) - content chunk length (uint32) - content bytes
 // chunk 1-N: transfer id (uint32) - chunk number (uint32) - content chunk length (uint32) - content bytes
 // the chunk number is 0-based index
 
@@ -24,7 +24,7 @@ type BinaryTransportFileSplitter struct {
 }
 
 // Split
-func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*BinaryTransportMessage {
+func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte, targetShardId []byte) []*BinaryTransportMessage {
 	// Chunks
 	chunks := make([]*BinaryTransportMessage, 0)
 
@@ -47,7 +47,7 @@ func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*B
 
 	// Determine chunk count
 	var chunkCount uint32
-	var availableContentBytesFirstChunk uint32 = this.ChunkSize - 4 /* transfer number */ - 4 /* chunk number */ - 4 /* file meta length */ - metaBytesLen - 4 /* chunk count */ - 4 /* content chunk length */
+	var availableContentBytesFirstChunk uint32 = this.ChunkSize - 4 /* transfer number */ - 4 /* chunk number */ - 1 /* shard selected */ - 16 /* target shard id */ - 4 /* file meta length */ - metaBytesLen - 4 /* chunk count */ - 4 /* content chunk length */
 	if availableContentBytesFirstChunk >= dataLen {
 		// All fits in one chunk
 		chunkCount = 1
@@ -76,6 +76,17 @@ func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*B
 		// Based on chunk
 		switch i {
 		case 0:
+			// Shard selected?
+			if targetShardId == nil || len(targetShardId) != 16 {
+				// No target shard
+				buf.Write([]byte{0})
+				buf.Write(make([]byte, 16))
+			} else {
+				// Target shard
+				buf.Write([]byte{1})
+				buf.Write(targetShardId)
+			}
+
 			// First meta chunk
 			binary.Write(buf, binary.BigEndian, uint32(metaBytesLen)) // file meta length
 			buf.Write(metaBytes)                                      // meta bytes

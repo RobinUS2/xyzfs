@@ -13,6 +13,7 @@ type BinaryTransportFileReceiver struct {
 	mux                sync.RWMutex
 	fileMeta           *FileMeta
 	data               *bytes.Buffer
+	targetShardId      []byte
 	chunkCount         uint32
 	receivedDataChunks map[uint32][]byte // Data
 }
@@ -60,6 +61,24 @@ func (this *BinaryTransportFileReceiver) _readFirstChunk(chunkNumber uint32, buf
 		return
 	}
 	this.mux.RUnlock()
+
+	// Read target shard flag
+	targetShardSet, targetShardSetErr := buf.ReadByte()
+	panicErr(targetShardSetErr)
+
+	// Target shard id
+	targetShardIdBytes := make([]byte, 16)
+	targetShardIdBytesRead, _ := buf.Read(targetShardIdBytes)
+	if uint32(targetShardIdBytesRead) != 16 {
+		panic("Target shard id bytes read mismatch")
+	}
+
+	// Set target shard
+	if targetShardSet == 1 {
+		this.mux.Lock()
+		this.targetShardId = targetShardIdBytes
+		this.mux.Unlock()
+	}
 
 	// Read meta length
 	var metaLen uint32

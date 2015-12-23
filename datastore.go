@@ -50,8 +50,8 @@ func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
 	fileMeta := newFileMeta(fullName)
 	fileMeta.UpdateFromData(data)
 
-	// Split file into message chunks
-	msgs := this.fileSplitter.Split(fileMeta, data)
+	// Split file into message chunks (no target shard)
+	msgs := this.fileSplitter.Split(fileMeta, data, nil)
 
 	// Send data
 	for _, msg := range msgs {

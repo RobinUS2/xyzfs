@@ -20,8 +20,8 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 		fileMeta.Size = uint32(len(data))
 		fileMeta.Checksum = crc32.Checksum(data, crcTable)
 
-		// Split
-		chunks := splitter.Split(fileMeta, data)
+		// Split (no target shard id)
+		chunks := splitter.Split(fileMeta, data, nil)
 
 		// Chunk count check
 		if len(chunks) < 1 {
