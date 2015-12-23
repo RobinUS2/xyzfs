@@ -17,7 +17,7 @@ func (this *NodeRouter) PickNode() (string, error) {
 
 	// No nodes? Route to localhost
 	if nodeCount == 0 {
-		return "127.0.0.1", nil
+		return runtime.GetNode(), nil
 	}
 
 	// Select

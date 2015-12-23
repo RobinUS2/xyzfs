@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"sync"
 )
 
 // Runtime information
 var runtime *Runtime
 
 type Runtime struct {
-	Id string
+	Id   string
+	Node string
+
+	mux sync.RWMutex
 }
 
 // Save
@@ -24,6 +28,24 @@ func (this *Runtime) Save(runtimeFilePath string) (bool, error) {
 		return false, ioe
 	}
 	return true, nil
+}
+
+// Set node
+func (this *Runtime) SetNode(node string) {
+	this.mux.Lock()
+	var shouldSave bool = (node != this.Node)
+	this.Node = node
+	this.mux.Unlock()
+	if shouldSave {
+		go this.Save(fmt.Sprintf("%s/runtime.json", conf.MetaBasePath))
+	}
+}
+
+// Get node
+func (this *Runtime) GetNode() string {
+	this.mux.RLock()
+	defer this.mux.RUnlock()
+	return this.Node
 }
 
 // New runtime
@@ -46,7 +68,8 @@ func newRuntime() *Runtime {
 
 	// New
 	r := &Runtime{
-		Id: uuidToString(randomUuid()),
+		Id:   uuidToString(randomUuid()),
+		Node: "127.0.0.1", // default reference
 	}
 
 	// Save

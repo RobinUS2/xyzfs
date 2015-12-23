@@ -25,6 +25,7 @@ func (this *Gossip) _sendHello(node string) error {
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
 	// Ignore messages from ourselves
 	if string(msg.Data) == runtime.Id {
+		runtime.SetNode(cmeta.GetNode())
 		log.Debugf("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
 		return
 	}

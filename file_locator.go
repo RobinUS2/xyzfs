@@ -66,6 +66,13 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 
 // Load index
 func (this *FileLocator) LoadIndex(node string, shardId []byte, idx *ShardIndex) {
+	// Ignore local shards
+	if node == runtime.GetNode() {
+		log.Debug("Ignore local shard, not registering as remote shard")
+		return
+	}
+
+	// Valid?
 	if len(shardId) != 16 {
 		log.Errorf("Received invalid remote shard index %v from %s", shardId, node)
 		return
@@ -119,7 +126,7 @@ func (this *FileLocator) ShardLocations() map[string][]*ShardLocation {
 	for _, volume := range datastore.Volumes() {
 		for _, shard := range volume.Shards() {
 			// Register local mapping
-			this._addShardNodeMapping(shard.Id, "localhost", true)
+			this._addShardNodeMapping(shard.Id, runtime.GetNode(), true)
 		}
 	}
 
