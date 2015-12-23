@@ -42,6 +42,8 @@ func PostFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	// @todo is this a new file? In that case we have to modify it
+
 	// Add file
 	res, resE := datastore.AddFile(file, b)
 	if resE != nil {
