@@ -39,6 +39,7 @@ func (this *Gossip) _receiveNodeList(cmeta *TransportConnectionMeta, msg *Gossip
 
 // Send list of nodes
 func (this *Gossip) _sendNodeList(node string) {
+	log.Infof("Sending node list to %s", node)
 	msg := newGossipMessage(NodeListGossipMessageType, this.NodesToJSON())
 	this._send(node, msg)
 }
