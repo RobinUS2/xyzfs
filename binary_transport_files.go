@@ -16,7 +16,7 @@ func (this *BinaryTransport) _sendFileChunk(node string, msg *BinaryTransportMes
 // Get file receiver
 func (this *BinaryTransport) _getFileReceiver(cmeta *TransportConnectionMeta, transferId uint32) *BinaryTransportFileReceiver {
 	// Get key
-	k := fmt.Sprintf("%s~seq%d", cmeta.GetNode(), transferId)
+	k := this._fileReceiverKey(cmeta, transferId)
 
 	// @todo Cleanup file receivers that have long not received files
 
@@ -33,6 +33,22 @@ func (this *BinaryTransport) _getFileReceiver(cmeta *TransportConnectionMeta, tr
 	defer this.fileReceiversMux.Unlock()
 	this.fileReceivers[k] = newBinaryTransportFileReceiver()
 	return this.fileReceivers[k]
+}
+
+// File receiver key
+func (this *BinaryTransport) _fileReceiverKey(cmeta *TransportConnectionMeta, transferId uint32) string {
+	return fmt.Sprintf("%s~seq%d", cmeta.GetNode(), transferId)
+}
+
+// Cleanup file receiver
+func (this *BinaryTransport) _removeFileReceiver(cmeta *TransportConnectionMeta, transferId uint32) {
+	// Get key
+	k := this._fileReceiverKey(cmeta, transferId)
+
+	// Delete
+	this.fileReceiversMux.Lock()
+	delete(this.fileReceivers, k)
+	this.fileReceiversMux.Unlock()
 }
 
 // Receive file
@@ -62,11 +78,16 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 
 	// Done?
 	if done {
+		// To bytes
 		b, be := receiver.Bytes()
 		panicErr(be)
-		// @todo Store file in shard
+
+		// Log
 		log.Infof("Received file %s of length %d", receiver.fileMeta.FullName, len(b))
 
-		// @todo cleanup file receivers
+		// @todo Store file in shard
+
+		// Cleanup file receivers
+		this._removeFileReceiver(cmeta, transferNumber)
 	}
 }
