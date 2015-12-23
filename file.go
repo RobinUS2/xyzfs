@@ -78,6 +78,9 @@ func (this *FileMeta) FromBytes(b []byte) {
 func (this *FileMeta) UpdateFromData(b []byte) {
 	// Size
 	this.Size = uint32(len(b))
+	if this.Size > uint32(conf.MaxFileSize) {
+		panic("Exceeds maximum file size")
+	}
 
 	// File meta checksum
 	this.Checksum = crc32.Checksum(b, crcTable)

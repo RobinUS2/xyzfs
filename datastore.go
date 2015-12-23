@@ -34,6 +34,11 @@ func (this *Datastore) LocateFile(fullName string) ([]*ShardIndex, uint32, error
 
 // Add file
 func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
+	// Validate max file size
+	if len(data) > conf.MaxFileSize {
+		return false, errors.New("Exceeds maximum file size")
+	}
+
 	// Select node on where to execute this (it will be written there locally to a shard with space)
 	node, nodeSelectionErr := this.nodeRouter.PickNode()
 	if nodeSelectionErr != nil {

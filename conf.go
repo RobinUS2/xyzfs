@@ -26,6 +26,7 @@ type Conf struct {
 	BinaryPort                int
 	BinaryUdpPort             int
 	BinaryTransportReadBuffer int
+	MaxFileSize               int
 	HttpDebug                 bool
 }
 
@@ -60,6 +61,9 @@ func newConf() *Conf {
 
 		// Binary
 		BinaryTransportReadBuffer: 32 * 1024 * 1024,
+
+		// Files
+		MaxFileSize: 1024 * 1024 * 1024,
 
 		// HTTP Debug
 		HttpDebug: true,

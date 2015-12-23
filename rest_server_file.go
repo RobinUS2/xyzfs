@@ -35,6 +35,13 @@ func PostFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	// Maximum file size
+	if len(b) > conf.MaxFileSize {
+		jr.Error("File exceeds maximum file size")
+		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
+		return
+	}
+
 	// Add file
 	res, resE := datastore.AddFile(file, b)
 	if resE != nil {

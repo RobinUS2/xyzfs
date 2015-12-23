@@ -18,6 +18,8 @@ func (this *BinaryTransport) _getFileReceiver(cmeta *TransportConnectionMeta, tr
 	// Get key
 	k := fmt.Sprintf("%s~seq%d", cmeta.GetNode(), transferId)
 
+	// @todo Cleanup file receivers that have long not received files
+
 	// Existing?
 	this.fileReceiversMux.RLock()
 	if this.fileReceivers[k] != nil {
@@ -64,5 +66,7 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 		panicErr(be)
 		// @todo Store file in shard
 		log.Infof("Received file %s of length %d", receiver.fileMeta.FullName, len(b))
+
+		// @todo cleanup file receivers
 	}
 }
