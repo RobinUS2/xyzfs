@@ -18,17 +18,9 @@ type BinaryTransportFileReceiver struct {
 }
 
 // Receive chunk, returns true if done
-func (this *BinaryTransportFileReceiver) AddMessage(msg *BinaryTransportMessage) bool {
-	// Validate this is what it should be
-	if msg.Type != FileBinaryTransportMessageType {
-		panic("Invalid message type")
-	}
-
-	// New byte reader
-	buf := bytes.NewReader(msg.Data)
-	var err error
-
+func (this *BinaryTransportFileReceiver) Add(buf *bytes.Reader) bool {
 	// Read chunk number
+	var err error
 	var chunkNumber uint32
 	err = binary.Read(buf, binary.BigEndian, &chunkNumber)
 	panicErr(err)

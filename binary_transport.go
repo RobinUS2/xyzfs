@@ -1,5 +1,9 @@
 package main
 
+import (
+	"sync"
+)
+
 // Binary transport: inter-node transfer of data
 
 // Global var
@@ -7,8 +11,13 @@ var binaryTransport *BinaryTransport
 
 // Binary transport
 type BinaryTransport struct {
+	// Transport layers
 	transport    *NetworkTransport
 	udpTransport *NetworkTransport
+
+	// File receivers
+	fileReceiversMux sync.RWMutex
+	fileReceivers    map[string]*BinaryTransportFileReceiver
 }
 
 // Send message
@@ -19,8 +28,9 @@ func (this *BinaryTransport) _send(node string, msg *BinaryTransportMessage) err
 // Create new binary transport
 func newBinaryTransport() *BinaryTransport {
 	b := &BinaryTransport{
-		transport:    newNetworkTransport("tcp", "binary", conf.BinaryPort, conf.BinaryTransportReadBuffer),
-		udpTransport: newNetworkTransport("udp", "binary_udp", conf.BinaryUdpPort, conf.BinaryTransportReadBuffer),
+		transport:     newNetworkTransport("tcp", "binary", conf.BinaryPort, conf.BinaryTransportReadBuffer),
+		udpTransport:  newNetworkTransport("udp", "binary_udp", conf.BinaryUdpPort, conf.BinaryTransportReadBuffer),
+		fileReceivers: make(map[string]*BinaryTransportFileReceiver),
 	}
 
 	// Binary on connect

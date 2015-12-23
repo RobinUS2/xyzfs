@@ -4,24 +4,36 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"sync"
 )
 
 // Binary transport of files
 // as files can be pretty big we transport them in chunks
-// chunk 0: chunk number (uint32) - file meta length (uint32) - actual file meta bytes - chunk count (uint32) - content chunk length (uint32) - content bytes
-// chunk 1-N: chunk number (uint32) - content chunk length (uint32) - content bytes
+// chunk 0: transfer id (uint32) - chunk number (uint32) - file meta length (uint32) - actual file meta bytes - chunk count (uint32) - content chunk length (uint32) - content bytes
+// chunk 1-N: transfer id (uint32) - chunk number (uint32) - content chunk length (uint32) - content bytes
 // the chunk number is 0-based index
 
 // Splitter
 type BinaryTransportFileSplitter struct {
 	ChunkSize                      uint32
 	effectiveBytesAdditionalChunks uint32
+
+	// Transfer number
+	transferNumberMux sync.RWMutex
+	transferNumber    uint32
 }
 
 // Split
 func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*BinaryTransportMessage {
 	// Chunks
 	chunks := make([]*BinaryTransportMessage, 0)
+
+	// Get transfer number
+	var transferNumber uint32 = 0
+	this.transferNumberMux.Lock()
+	transferNumber = this.transferNumber
+	this.transferNumber++
+	this.transferNumberMux.Unlock()
 
 	// Meta to binary
 	metaBytes := meta.Bytes()
@@ -35,7 +47,7 @@ func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*B
 
 	// Determine chunk count
 	var chunkCount uint32
-	var availableContentBytesFirstChunk uint32 = this.ChunkSize - 4 /* chunk number */ - 4 /* file meta length */ - metaBytesLen - 4 /* chunk count */ - 4 /* content chunk length */
+	var availableContentBytesFirstChunk uint32 = this.ChunkSize - 4 /* transfer number */ - 4 /* chunk number */ - 4 /* file meta length */ - metaBytesLen - 4 /* chunk count */ - 4 /* content chunk length */
 	if availableContentBytesFirstChunk >= dataLen {
 		// All fits in one chunk
 		chunkCount = 1
@@ -51,6 +63,9 @@ func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*B
 	for i := 0; i < int(chunkCount); i++ {
 		// New buffer
 		buf := new(bytes.Buffer)
+
+		// Transfer number
+		binary.Write(buf, binary.BigEndian, transferNumber)
 
 		// Chunk number
 		binary.Write(buf, binary.BigEndian, uint32(i))
@@ -111,6 +126,7 @@ func (this *BinaryTransportFileSplitter) Split(meta *FileMeta, data []byte) []*B
 func newBinaryTransportFileSplitter(chunkSize uint32) *BinaryTransportFileSplitter {
 	return &BinaryTransportFileSplitter{
 		ChunkSize:                      chunkSize,
-		effectiveBytesAdditionalChunks: chunkSize - 4 /* chunk number */ - 4 /* content chunk length */ - 0,
+		effectiveBytesAdditionalChunks: chunkSize - 4 /* transfer number */ - 4 /* chunk number */ - 4 /* content chunk length */ - 0,
+		transferNumber:                 1, // Sequence number, unique for a node
 	}
 }

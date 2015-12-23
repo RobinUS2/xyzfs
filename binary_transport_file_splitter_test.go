@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"hash/crc32"
 	"math/rand"
 	"testing"
@@ -57,7 +59,17 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 		// Add messages to receiver
 		var done bool = false
 		for _, chunk := range chunksShuffled {
-			done = receiver.AddMessage(chunk)
+			// New byte reader
+			buf := bytes.NewReader(chunk.Data)
+			var err error
+
+			// Read transfer sequence number
+			var transferNumber uint32
+			err = binary.Read(buf, binary.BigEndian, &transferNumber)
+			panicErr(err)
+
+			// Add message
+			done = receiver.Add(buf)
 			if done {
 				break
 			}
