@@ -83,7 +83,9 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 		panicErr(be)
 
 		// Validate file meta
-		panicNil(receiver.fileMeta)
+		if receiver.fileMeta == nil {
+			panic("Unexpected nil file meta")
+		}
 
 		// Store file in shard
 		var targetShard *Shard = nil
@@ -94,7 +96,9 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 		} else {
 			targetShard = datastore.AllocateShardCapacity(receiver.fileMeta)
 		}
-		panicNil(targetShard)
+		if targetShard == nil {
+			panic("Unexpected nil target shard")
+		}
 
 		// Write to shard
 		writeResFileMeta, writeResErr := targetShard.AddFile(receiver.fileMeta, b)

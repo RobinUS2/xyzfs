@@ -9,10 +9,14 @@ import (
 // Receive list of nodes
 func (this *Gossip) _receiveNodeList(cmeta *TransportConnectionMeta, msg *GossipMessage) {
 	log.Debugf("Receiving nodes list %s", string(msg.Data))
+	this._startGossipFromJson(msg.Data)
+}
 
+// Start gossip from json array with nodes
+func (this *Gossip) _startGossipFromJson(b []byte) {
 	// Parse JSON
 	var list []string
-	jsonE := json.Unmarshal(msg.Data, &list)
+	jsonE := json.Unmarshal(b, &list)
 	if jsonE != nil {
 		log.Warnf("Failed to read nodes list: %s", jsonE)
 		return
@@ -30,7 +34,7 @@ func (this *Gossip) _receiveNodeList(cmeta *TransportConnectionMeta, msg *Gossip
 
 	// Connect to new nodes
 	if len(newList) > 0 {
-		log.Infof("Discovered new nodes from gossip node list: %v", newList)
+		log.Infof("Discovered new nodes: %v", newList)
 		for _, newElm := range newList {
 			go this._sendHello(newElm)
 		}
@@ -68,4 +72,16 @@ func (this *Gossip) PersistNodesToDisk() {
 	if err != nil {
 		log.Errorf("Failed to persist gossip nodes list to disk: %s", err)
 	}
+}
+
+// Recover gossip
+func (this *Gossip) recoverGossipFromDisk() {
+	// Read JSON
+	jsonBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/gossip_nodes.json", conf.MetaBasePath))
+	if err != nil {
+		log.Errorf("Failed to read gossip nodes list from disk: %s", err)
+	}
+
+	// Start gossip
+	this._startGossipFromJson(jsonBytes)
 }

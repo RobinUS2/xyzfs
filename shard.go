@@ -295,6 +295,10 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	// Log
 	log.Infof("Created file %s with size %d in shard %s, now contains %d file(s)", f.FullName, f.Size, this.IdStr(), newCount)
 
+	// Broadcast full index
+	// @todo Remove this, we should only broadcast the changes
+	binaryTransport._broadcastShardIndex(this)
+
 	// Done
 	return f, nil
 }

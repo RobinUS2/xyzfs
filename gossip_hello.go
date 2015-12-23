@@ -23,8 +23,11 @@ func (this *Gossip) _sendHello(node string) error {
 
 // Receive hello
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
+	// Hello runtime ID
+	remoteRuntimeId := string(msg.Data)
+
 	// Ignore messages from ourselves
-	if string(msg.Data) == runtime.Id {
+	if remoteRuntimeId == runtime.Id {
 		runtime.SetNode(cmeta.GetNode())
 		log.Debugf("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
 		return
@@ -32,6 +35,13 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 
 	// State
 	state := this.GetNodeState(cmeta.GetNode())
+
+	// Is this a new runtime ID (meaning application restarted or something like that)?
+	if remoteRuntimeId != state.GetRuntimeId() {
+		log.Warnf("Runtime ID from %s has changed, resetting gossip", cmeta.GetNode())
+		state.Reset()
+	}
+	state.SetRuntimeId(remoteRuntimeId)
 
 	// Handshake complete?
 	if state.GetLastHelloReceived() == 0 {

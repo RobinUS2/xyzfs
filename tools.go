@@ -10,12 +10,6 @@ func panicErr(e error) {
 	}
 }
 
-func panicNil(x interface{}) {
-	if x == nil {
-		panic("Unexpected nil")
-	}
-}
-
 func unixTsUint32() uint32 {
 	return uint32(time.Now().Unix())
 }

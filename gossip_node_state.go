@@ -5,8 +5,9 @@ import (
 )
 
 type GossipNodeState struct {
-	mux  sync.RWMutex
-	Node string
+	mux       sync.RWMutex
+	Node      string
+	RuntimeId string
 	// Pings between nodes
 	LastHelloSent     uint32
 	LastHelloReceived uint32
@@ -34,6 +35,26 @@ func (this *GossipNodeState) GetLastHelloReceived() uint32 {
 	this.mux.RLock()
 	defer this.mux.RUnlock()
 	return this.LastHelloReceived
+}
+
+func (this *GossipNodeState) SetRuntimeId(id string) {
+	this.mux.Lock()
+	this.RuntimeId = id
+	this.mux.Unlock()
+}
+
+func (this *GossipNodeState) GetRuntimeId() string {
+	this.mux.RLock()
+	defer this.mux.RUnlock()
+	return this.RuntimeId
+}
+
+func (this *GossipNodeState) Reset() {
+	this.mux.Lock()
+	this.LastHelloSent = 0
+	this.LastHelloReceived = 0
+	this.RuntimeId = ""
+	this.mux.Unlock()
 }
 
 func newGossipNodeState(node string) *GossipNodeState {

@@ -113,13 +113,26 @@ func newGossip() *Gossip {
 
 	// Connect
 	g.transport._onConnect = func(cmeta *TransportConnectionMeta, node string) {
+		// Reset any previous state
+		nodeState := g.GetNodeState(node)
+		if nodeState.GetLastHelloReceived() > 0 {
+			// Re-transmit indices
+			binaryTransport._sendShardIndices(node)
+		}
+		nodeState.Reset()
+
 		// Send hello
 		g._sendHello(node)
 	}
 
 	// Start
 	g.transport.start()
+
+	// Start discovery
 	g.discoverSeeds()
+
+	// Discovery from disk
+	g.recoverGossipFromDisk()
 
 	return g
 }

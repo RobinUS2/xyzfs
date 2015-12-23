@@ -98,8 +98,10 @@ func (this *Datastore) AllocateShardCapacity(fileMeta *FileMeta) *Shard {
 			}
 		}
 	}
-	// @todo If nothing found, we should expand capacity
-	return nil
+
+	// No capacity found, let's create some
+	this.NewBlock()
+	return this.AllocateShardCapacity(fileMeta)
 }
 
 // New block

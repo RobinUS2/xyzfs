@@ -159,16 +159,6 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 // Discover a single seed
 func (this *NetworkTransport) _connect(node string) {
-	// Are we already waiting for this?
-	this.isConnectingMux.Lock()
-	if this.isConnecting[node] {
-		this.isConnectingMux.Unlock()
-		log.Infof("Ignore connect, we are aleady connecting to %s", node)
-		return
-	}
-	this.isConnecting[node] = true
-	this.isConnectingMux.Unlock()
-
 	// Are we already connected?
 	this.connectionsMux.RLock()
 	if this.connections[node] != nil {
@@ -178,14 +168,15 @@ func (this *NetworkTransport) _connect(node string) {
 	}
 	this.connectionsMux.RUnlock()
 
-	// Do not connect to ourselves
-	this.mux.RLock()
-	listenSplit := strings.Split(this.listenAddr, ":")
-	this.mux.RUnlock()
-	if listenSplit[0] == node {
-		log.Infof("Not connecting to address (%s) on which are are listening ourselves", listenSplit[0])
+	// Are we already waiting for this?
+	this.isConnectingMux.Lock()
+	if this.isConnecting[node] {
+		this.isConnectingMux.Unlock()
+		log.Infof("Ignore connect, we are aleady connecting to %s", node)
 		return
 	}
+	this.isConnecting[node] = true
+	this.isConnectingMux.Unlock()
 
 	// Start contacting node
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
