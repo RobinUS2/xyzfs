@@ -45,7 +45,6 @@ func (this *Volume) Shards() map[string]*Shard {
 // Register shard
 func (this *Volume) RegisterShard(s *Shard) {
 	this.shardsMux.Lock()
-	log.Infof("%d", len(this.shards))
 	log.Infof("Registered shard %s with volume %s", s.IdStr(), this.IdStr())
 	this.shards[s.IdStr()] = s
 	this.shardsMux.Unlock()
