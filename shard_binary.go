@@ -92,6 +92,7 @@ func (this *Shard) _fromBinaryFormat() (bool, error) {
 	log.Debugf("Read %d metadata bytes: %v", metaBytesRead, metaBytes)
 	this.shardMeta = newShardMeta()
 	this.shardMeta.FromBytes(metaBytes)
+	this.contentsOffset = this.shardMeta.ContentsLength
 	metaBytes = nil
 	if this.shardMeta.MetaVersion < 1 {
 		panic("Failed to read metadata, could not find version")
@@ -128,7 +129,7 @@ func (this *Shard) _fromBinaryFormat() (bool, error) {
 	this.shardFileMeta.FromBytes(fileMetaBytes)
 	fileMetaBytes = nil
 	if this.shardFileMeta.FileMeta == nil {
-		panic("Fle meta is nil")
+		panic("File meta is nil")
 	}
 	log.Debugf("Shard file meta %v", this.shardFileMeta)
 

@@ -53,16 +53,15 @@ func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
 	// Split file into message chunks (no target shard)
 	msgs := this.fileSplitter.Split(fileMeta, data, nil)
 
-	// Send data
+	// Send data to node
 	for _, msg := range msgs {
 		binaryTransport._sendFileChunk(node, msg)
 	}
 
-	// @todo Send data to that node over blocking RPC
 	// @todo Write to other replicate nodes
 	// @todo Write shard index change (effectively add file to bloom filter) to all nodes (UDP)
 
-	return false, errors.New("Not implemented")
+	return true, nil
 }
 
 // Find block
@@ -74,6 +73,32 @@ func (this *Datastore) BlockByIdStr(id string) *Block {
 			}
 		}
 	}
+	return nil
+}
+
+// Find shard
+func (this *Datastore) ShardByIdStr(id string) *Shard {
+	for _, volume := range this.Volumes() {
+		for _, shard := range volume.Shards() {
+			if shard.IdStr() == id {
+				return shard
+			}
+		}
+	}
+	return nil
+}
+
+// Find writable shard
+func (this *Datastore) AllocateShardCapacity(fileMeta *FileMeta) *Shard {
+	for _, volume := range this.Volumes() {
+		for _, shard := range volume.Shards() {
+			// Allocate capacity
+			if shard.AllocateCapacity(fileMeta.Size) {
+				return shard
+			}
+		}
+	}
+	// @todo If nothing found, we should expand capacity
 	return nil
 }
 

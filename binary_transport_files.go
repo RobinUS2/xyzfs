@@ -82,10 +82,27 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 		b, be := receiver.Bytes()
 		panicErr(be)
 
-		// Log
-		log.Infof("Received file %s of length %d", receiver.fileMeta.FullName, len(b))
+		// Store file in shard
+		var targetShard *Shard = nil
 
-		// @todo Store file in shard
+		// Has target shard?
+		if receiver.targetShardId != nil {
+			targetShard = datastore.ShardByIdStr(uuidToString(receiver.targetShardId))
+		} else {
+			targetShard = datastore.AllocateShardCapacity(receiver.fileMeta)
+		}
+
+		// Write to shard
+		writeResFileMeta, writeResErr := targetShard.AddFile(receiver.fileMeta, b)
+		panicErr(writeResErr)
+
+		// Persist shard
+		targetShard.Persist()
+
+		// Log
+		if writeResFileMeta != nil {
+			log.Infof("Received file %s of length %d", writeResFileMeta.FullName, writeResFileMeta.Size)
+		}
 
 		// Cleanup file receivers
 		this._removeFileReceiver(cmeta, transferNumber)

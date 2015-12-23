@@ -7,7 +7,7 @@ func (this *BinaryTransport) _sendShardIndices(node string) {
 	log.Infof("Sending local shard indices to %s", node)
 	for _, volume := range datastore.Volumes() {
 		for _, shard := range volume.Shards() {
-			this._sendShardIndex(shard, node)
+			go this._sendShardIndex(shard, node)
 		}
 	}
 }

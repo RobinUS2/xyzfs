@@ -33,6 +33,10 @@ type Shard struct {
 	contentsMux    sync.RWMutex
 	contentsOffset uint32
 
+	// Allocated capacity, this is used to acquire data in a shard to write data (a file) to
+	allocationMux       sync.RWMutex
+	allocatedBytesCount uint32
+
 	// File metadata, recovered from byte buffers on disk
 	shardFileMeta *ShardFileMeta
 
@@ -61,6 +65,27 @@ const (
 	FlushShardBufferMode                        // 3 = final process of writing the shard to bytes for the disk
 	ReadyShardBufferMode                        // 4 = this is what an in-memory version looks like that is used for random access
 )
+
+// Allocate space, returns true if
+func (this *Shard) AllocateCapacity(n uint32) bool {
+	// Lock
+	this.allocationMux.Lock()
+	defer this.allocationMux.Unlock()
+
+	// Available
+	available := uint32(conf.ShardSizeInBytes) - this.contentsOffset
+
+	// Does it fit?
+	if available >= n {
+		// Allocate
+		this.allocatedBytesCount += n
+
+		// :)
+		return true
+	}
+	// Nope..
+	return false
+}
 
 // Read contents
 // - locking should be done in the buffer itself
