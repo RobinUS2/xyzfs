@@ -14,6 +14,13 @@ func (this *NodeRouter) PickNode() (string, error) {
 	// @todo smarter node selection, e.g. https://labs.spotify.com/2015/12/08/els-part-1/
 	nodes := gossip.GetNodeStates()
 	nodeCount := len(nodes)
+
+	// No nodes? Route to localhost
+	if nodeCount == 0 {
+		return "127.0.0.1", nil
+	}
+
+	// Select
 	selected := rand.Intn(nodeCount)
 	i := 0
 	for _, node := range nodes {
