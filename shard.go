@@ -223,18 +223,14 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	this.isFlushed = false
 	this.isFlushedMux.Unlock()
 
-	// Calculate length
-	fileLen := uint32(len(b))
-
 	// Acquire write lock
 	this.contentsMux.Lock()
 
 	// Update metadata
-	f.Size = fileLen
-	f.StartOffset = this.contentsOffset
+	f.UpdateFromData(b)
 
-	// File meta checksum
-	f.Checksum = crc32.Checksum(b, crcTable)
+	// Set start offset in shard
+	f.StartOffset = this.contentsOffset
 
 	// Write contents to buffer
 	this.Contents().Write(b)
@@ -256,9 +252,6 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 
 	// Update index
 	this.shardIndex.Add(f.FullName)
-
-	// @todo Write to other replicate nodes
-	// @todo Write shard index change (effectively add file to bloom filter) to all nodes (UDP)
 
 	// Log
 	log.Infof("Created file %s with size %d in shard %s, now contains %d file(s)", f.FullName, f.Size, this.IdStr(), newCount)

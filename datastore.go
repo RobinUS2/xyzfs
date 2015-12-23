@@ -9,8 +9,9 @@ import (
 var datastore *Datastore
 
 type Datastore struct {
-	fileLocator *FileLocator
-	nodeRouter  *NodeRouter
+	fileLocator  *FileLocator
+	nodeRouter   *NodeRouter
+	fileSplitter *BinaryTransportFileSplitter
 }
 
 // Prepare data store for interactions
@@ -38,10 +39,23 @@ func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
 	if nodeSelectionErr != nil {
 		return false, nodeSelectionErr
 	}
+	log.Debugf("Routing add file request to %s", node)
 
-	log.Infof("Routing AddFile() request to %s", node)
+	// Create meta
+	fileMeta := newFileMeta(fullName)
+	fileMeta.UpdateFromData(data)
+
+	// Split file into message chunks
+	msgs := this.fileSplitter.Split(fileMeta, data)
+
+	// Send data
+	for _, msg := range msgs {
+		binaryTransport._sendFileChunk(node, msg)
+	}
 
 	// @todo Send data to that node over blocking RPC
+	// @todo Write to other replicate nodes
+	// @todo Write shard index change (effectively add file to bloom filter) to all nodes (UDP)
 
 	return false, errors.New("Not implemented")
 }
@@ -84,8 +98,9 @@ func (this *Datastore) NewBlock() *Block {
 
 func newDatastore() *Datastore {
 	d := &Datastore{
-		fileLocator: newFileLocator(),
-		nodeRouter:  newNodeRouter(),
+		fileLocator:  newFileLocator(),
+		nodeRouter:   newNodeRouter(),
+		fileSplitter: newBinaryTransportFileSplitter(uint32(conf.BinaryTransportReadBuffer)),
 	}
 	d.prepare()
 	return d

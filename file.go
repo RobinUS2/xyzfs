@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/spaolacci/murmur3"
+	"hash/crc32"
 )
 
 // Virtual file representation
@@ -73,6 +74,15 @@ func (this *FileMeta) FromBytes(b []byte) {
 
 }
 
+// Update contents from data of the file (e.g. length)
+func (this *FileMeta) UpdateFromData(b []byte) {
+	// Size
+	this.Size = uint32(len(b))
+
+	// File meta checksum
+	this.Checksum = crc32.Checksum(b, crcTable)
+}
+
 // Get murmur hash
 func (this *FileMeta) GetHash() uint64 {
 	return murmur3.Sum64([]byte(this.FullName))
@@ -86,5 +96,6 @@ func newFileMeta(name string) *FileMeta {
 		Created:     unixTsUint32(),
 		Size:        0, // auto-calculated on write
 		StartOffset: 0, // auto-calculated on write
+		Checksum:    0, // auto-calculated on write
 	}
 }
