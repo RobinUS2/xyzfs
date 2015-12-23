@@ -110,6 +110,7 @@ func newDatastoreConf() *DatastoreConf {
 		v := newVolume()
 		v.Id = randomUuid()
 		v.Path = conf.VolumeBasePath
+		// Do not prepare, is done all at once
 		d = append(d, v)
 	}
 
@@ -131,7 +132,7 @@ func recoverVolumeConfiguration() []*Volume {
 
 	// Iterate
 	for _, elm := range list {
-		split := strings.Split(elm.Name(), "=")
+		split := strings.Split(elm.Name(), "_")
 		// Must be in format v=UUID
 		if len(split) != 2 || split[0] != "v" {
 			continue
@@ -141,6 +142,7 @@ func recoverVolumeConfiguration() []*Volume {
 		v := newVolume()
 		v.Id = uuidStringToBytes(split[1])
 		v.Path = conf.VolumeBasePath
+		// Do not prepare, is done all at once
 		d = append(d, v)
 	}
 	return d

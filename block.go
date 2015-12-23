@@ -88,6 +88,7 @@ func (this *Block) recoverShards() {
 		split := strings.Split(elm.Name(), "_")
 		// Must be in format s_UUID
 		if len(split) != 2 || split[0] != "s" {
+			log.Warnf("Ignoring invalid shard %s", elm)
 			continue
 		}
 

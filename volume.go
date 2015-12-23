@@ -60,6 +60,13 @@ func (this *Volume) RegisterBlock(b *Block) {
 
 // Prepare
 func (this *Volume) prepare() {
+	// Already prepared?
+	this.blocksMux.RLock()
+	if len(this.blocks) > 0 {
+		panic("already prepared")
+	}
+	this.blocksMux.RUnlock()
+
 	// Folder exists?
 	log.Debugf("Preparing volume %s", this.IdStr())
 	if _, err := os.Stat(this.FullPath()); os.IsNotExist(err) {
@@ -108,8 +115,9 @@ func (this *Volume) FullPath() string {
 
 // New volume
 func newVolume() *Volume {
-	return &Volume{
+	v := &Volume{
 		shards: make(map[string]*Shard),
 		blocks: make(map[string]*Block),
 	}
+	return v
 }
