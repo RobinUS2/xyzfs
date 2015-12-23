@@ -68,10 +68,16 @@ const (
 
 // Contains file?
 func (this *Shard) TestContainsFile(fullName string) bool {
-	// Make sure loaded
+	return this.ShardIndex().Test(fullName)
+}
+
+// Get shard index
+func (this *Shard) ShardIndex() *ShardIndex {
+	// Lazy load?
 	this.Load()
 
-	return this.shardIndex.Test(fullName)
+	// Return
+	return this.shardIndex
 }
 
 // Allocate space, returns true if

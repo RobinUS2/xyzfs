@@ -25,7 +25,7 @@ func (this *BinaryTransport) _sendShardIndex(shard *Shard, node string) {
 	log.Infof("Sending local shard index %s (%s) to %s", shard.IdStr(), uuidToString(shard.shardIndex.ShardId), node)
 
 	// To bytes
-	b := shard.shardIndex.Bytes()
+	b := shard.ShardIndex().Bytes()
 
 	// Msg
 	msg := newBinaryTransportMessage(ShardIdxBinaryTransportMessageType, b)
