@@ -23,13 +23,15 @@ type Block struct {
 // Init shards
 func (this *Block) initShards() {
 	for i := 0; i < conf.DataShardsPerBlock; i++ {
-		this.DataShards[i] = newShard(this)
-		this.DataShards[i].BlockIndex = uint(i)
+		shard := newShard(this)
+		shard.BlockIndex = uint(i)
+		this.RegisterDataShard(shard)
 	}
 	for i := 0; i < conf.ParityShardsPerBlock; i++ {
-		this.ParityShards[i] = newShard(this)
-		this.ParityShards[i].Parity = true
-		this.ParityShards[i].BlockIndex = uint(i + conf.DataShardsPerBlock)
+		shard := newShard(this)
+		shard.Parity = true
+		shard.BlockIndex = uint(i + conf.DataShardsPerBlock)
+		this.RegisterParityShard(shard)
 	}
 }
 
@@ -77,6 +79,7 @@ func (this *Block) PrepareFolder() {
 
 // Recover shards
 func (this *Block) recoverShards() {
+	// Read files
 	list, e := ioutil.ReadDir(this.FullPath())
 	if e != nil {
 		log.Errorf("Failed to list shards in %s: %s", this.FullPath(), e)
@@ -84,6 +87,7 @@ func (this *Block) recoverShards() {
 	}
 
 	// Iterate
+	log.Infof("Found %d entries in block directory", len(list))
 	for _, elm := range list {
 		split := strings.Split(elm.Name(), "_")
 		// Must be in format s_UUID
@@ -94,8 +98,7 @@ func (this *Block) recoverShards() {
 
 		// Shard
 		nameSplit := strings.Split(split[1], ".")
-		shard := newShard(this)
-		shard.Id = uuidStringToBytes(nameSplit[0])
+		shard := newShardFromId(this, uuidStringToBytes(nameSplit[0]))
 
 		// Add to list
 		if strings.Contains(elm.Name(), ".parity") {
@@ -115,6 +118,9 @@ func (this *Block) RegisterDataShard(s *Shard) {
 		panic("Not a data shard")
 	}
 	this.shardsMux.Lock()
+	if len(this.DataShards) > conf.DataShardsPerBlock {
+		panic("Block full, can not register data shard")
+	}
 	log.Infof("Registered data shard %s with block %s", s.IdStr(), this.IdStr())
 	this.DataShards = append(this.DataShards, s)
 	this.shardsMux.Unlock()
@@ -126,6 +132,9 @@ func (this *Block) RegisterParityShard(s *Shard) {
 		panic("Not a parity shard")
 	}
 	this.shardsMux.Lock()
+	if len(this.ParityShards) > conf.ParityShardsPerBlock {
+		panic("Block full, can not register data shard")
+	}
 	log.Infof("Registered parity shard %s with block %s", s.IdStr(), this.IdStr())
 	this.ParityShards = append(this.ParityShards, s)
 	this.shardsMux.Unlock()
@@ -140,9 +149,8 @@ func newBlock(v *Volume) *Block {
 	b := &Block{
 		volume:       v,
 		Id:           randomUuid(),
-		DataShards:   make([]*Shard, conf.DataShardsPerBlock),
-		ParityShards: make([]*Shard, conf.ParityShardsPerBlock),
+		DataShards:   make([]*Shard, 0),
+		ParityShards: make([]*Shard, 0),
 	}
-	b.initShards()
 	return b
 }

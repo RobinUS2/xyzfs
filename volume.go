@@ -45,6 +45,7 @@ func (this *Volume) Shards() map[string]*Shard {
 // Register shard
 func (this *Volume) RegisterShard(s *Shard) {
 	this.shardsMux.Lock()
+	log.Infof("%d", len(this.shards))
 	log.Infof("Registered shard %s with volume %s", s.IdStr(), this.IdStr())
 	this.shards[s.IdStr()] = s
 	this.shardsMux.Unlock()
@@ -55,6 +56,15 @@ func (this *Volume) RegisterBlock(b *Block) {
 	this.blocksMux.Lock()
 	log.Infof("Registered block %s with volume %s", b.IdStr(), this.IdStr())
 	this.blocks[b.IdStr()] = b
+
+	// Register shards in this block
+	for _, shard := range b.DataShards {
+		this.RegisterShard(shard)
+	}
+	for _, shard := range b.ParityShards {
+		this.RegisterShard(shard)
+	}
+
 	this.blocksMux.Unlock()
 }
 
@@ -63,7 +73,7 @@ func (this *Volume) prepare() {
 	// Already prepared?
 	this.blocksMux.RLock()
 	if len(this.blocks) > 0 {
-		panic("already prepared")
+		panic("Volume already prepared")
 	}
 	this.blocksMux.RUnlock()
 
@@ -86,6 +96,7 @@ func (this *Volume) prepare() {
 	}
 
 	// Iterate
+	log.Infof("Found %d entries in volume directory", len(list))
 	for _, elm := range list {
 		split := strings.Split(elm.Name(), "_")
 		// Must be in format b_UUID

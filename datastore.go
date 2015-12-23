@@ -71,16 +71,8 @@ func (this *Datastore) NewBlock() *Block {
 	// Init shards
 	b.initShards()
 
-	// Register block
+	// Register block (takes care of shard registration internally)
 	volume.RegisterBlock(b)
-
-	// Register shards with local volume
-	for _, s := range b.DataShards {
-		volume.RegisterShard(s)
-	}
-	for _, s := range b.ParityShards {
-		volume.RegisterShard(s)
-	}
 
 	// @todo replicate shard to other host
 	// @todo store shard replication information on disk + in-memory

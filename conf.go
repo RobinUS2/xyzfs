@@ -131,6 +131,7 @@ func recoverVolumeConfiguration() []*Volume {
 	d := make([]*Volume, 0)
 
 	// Iterate
+	log.Infof("Found %d entries in xyzFS data directory", len(list))
 	for _, elm := range list {
 		split := strings.Split(elm.Name(), "_")
 		// Must be in format v=UUID

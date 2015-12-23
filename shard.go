@@ -269,6 +269,10 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 
 func newShard(b *Block) *Shard {
 	id := randomUuid()
+	return newShardFromId(b, id)
+}
+
+func newShardFromId(b *Block, id []byte) *Shard {
 	return &Shard{
 		contents:      nil,
 		Id:            id,
