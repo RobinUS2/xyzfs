@@ -141,6 +141,13 @@ func (this *Shard) Persist() {
 	this.isFlushed = true
 }
 
+// Reset loaded
+func (this *Shard) ResetLoaded() {
+	this.isLoadedMux.Lock()
+	this.isLoaded = false
+	this.isLoadedMux.Unlock()
+}
+
 // Load from disk
 func (this *Shard) Load() (bool, error) {
 	this.isLoadedMux.Lock()

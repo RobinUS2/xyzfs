@@ -107,6 +107,9 @@ func TestNewFile(t *testing.T) {
 	shard.shardMeta = nil
 	shard.shardFileMeta = nil
 
+	// Force reload
+	shard.ResetLoaded()
+
 	// Read from disk
 	loadRes, loadErr := shard.Load()
 	if !loadRes {
