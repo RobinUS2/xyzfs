@@ -12,11 +12,6 @@ func (this *Gossip) _sendHello(node string) error {
 
 	// Update last sent
 	if err == nil {
-		// Handshake complete?
-		if this.GetNodeState(node).GetLastHelloSent() == 0 {
-			this._onHelloHandshakeComplete(node)
-		}
-
 		// We have sent hello
 		this.GetNodeState(node).UpdateLastHelloSent()
 	} else {

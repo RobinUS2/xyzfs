@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"errors"
+	// "errors"
 	"fmt"
 	"hash/crc32"
 	"io"
 	"net"
 	"strings"
 	"sync"
-	"time"
+	// "time"
 )
 
 var TRANSPORT_MAGIC_FOOTER []byte = []byte{'\r', '\n', 'X', 'Y', 'Z'}
@@ -32,7 +32,7 @@ type NetworkTransport struct {
 	_onConnect func(*TransportConnectionMeta, string)
 	// Connections
 	connectionPoolSize int
-	connections        map[string]chan *TransportConnection
+	connections        map[string]*TransportConnectionPool
 	connectionsMux     sync.RWMutex
 	// Is connecting
 	isConnectingMux sync.RWMutex
@@ -187,171 +187,94 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	}
 }
 
-// Discover a single seed
-func (this *NetworkTransport) _connect(node string) {
-	// Start contacting node
-	log.Infof("Contacting node %s for %s", node, this.serviceName)
-	var conn net.Conn
-	var err error
-	for i := 0; i < 5; i++ {
-		conn, err = net.Dial(this.protocol, fmt.Sprintf("%s:%d", node, this.port))
-		if err != nil {
-			// handle error
-			log.Errorf("Failed to contact node %s for %s: %s", node, this.serviceName, err)
-
-			// Close connection
-			if conn != nil {
-				conn.Close()
-			}
-
-			// Wait a bit
-			time.Sleep(50 * time.Millisecond)
-
-			// Try again
-			continue
-		}
-
-		log.Infof("Established connection with node %s for %s", node, this.serviceName)
-		break
-	}
-	if conn == nil {
-		log.Errorf("Failed to establish connection for %s", this.serviceName)
-		return
-	}
-
-	// Send HELLO message to new nodes
-	if this._onConnect != nil {
-		go func() {
-			this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
-		}()
-	}
-
-	// Get channel
-	c := this.connections[node]
-
-	select {
-	case c <- newTransportConnection(node, &conn):
-		log.Infof("New transport connection %s", this.serviceName)
-		break
-	default:
-		log.Warnf("Connection pool overflow of %s", this.serviceName)
-	}
-}
-
 // Prepare connection
 func (this *NetworkTransport) _prepareConnection(node string) {
 	// Get channel
 	this.connectionsMux.Lock()
-	c := this.connections[node]
-	if c == nil {
-		log.Infof("Prepare connection channel for %s of %s", node, this.serviceName)
-		this.connections[node] = make(chan *TransportConnection, this.connectionPoolSize) // @todo configure connection pool size
-		c = this.connections[node]
+	if this.connections[node] == nil {
+		this.connections[node] = newTransportConnectionPool(this, 4)
 
-		// Prepare actual connections
-		for i := 0; i < this.connectionPoolSize; i++ {
-			go this._connect(node)
-		}
+		// Send HELLO message to new nodes
+		// if this._onConnect != nil {
+		// 	go func() {
+		// 		connection := <-c
+		// 		conn := *connection.conn
+		// 		this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+		// 	}()
+		// }
 	}
 	this.connectionsMux.Unlock()
 }
 
 // Get connection
 func (this *NetworkTransport) _getConnection(node string) *TransportConnection {
-	// Prepare
+	// Make sure prepared
 	this._prepareConnection(node)
 
-	// Chan
+	// Get
 	this.connectionsMux.RLock()
-	c := this.connections[node]
-	this.connectionsMux.RUnlock()
-
-	return <-c
-
-	// select {
-	// case conn := <-c:
-	// 	return conn
-	// default:
-	// 	panic("blocking get connection")
-	// 	return nil
-	// }
+	defer this.connectionsMux.RUnlock()
+	return this.connections[node].GetConnection()
 }
 
 // Return connection
 func (this *NetworkTransport) _returnConnection(node string, tc *TransportConnection) {
-	// Get channel
 	this.connectionsMux.RLock()
-	c := this.connections[node]
-	this.connectionsMux.RUnlock()
+	defer this.connectionsMux.RUnlock()
+	this.connections[node].ReturnConnection(tc)
+}
 
-	select {
-	case c <- tc:
-		// Into channel
-		log.Infof("Returned connection %s", this.serviceName)
-		break
-	default:
-		// overflow
-		log.Infof("Connection pool %s return overflow", this.serviceName)
-		tc.Close()
-	}
+// Discard connection
+func (this *NetworkTransport) _discardConnection(node string, tc *TransportConnection) {
+	this.connectionsMux.RLock()
+	defer this.connectionsMux.RUnlock()
+	this.connections[node].DiscardConnection(tc)
 }
 
 // Send message
 func (this *NetworkTransport) _send(node string, b []byte) error {
-	// Get connection
-	var connection *TransportConnection = this._getConnection(node)
-	if connection == nil {
-		return errors.New("Unable to get conection")
-	}
+	// Retries
+	var errb error
+	for i := 0; i < 5; i++ {
+		// Get connection
+		tc := this._getConnection(node)
 
-	// CRC
-	sendCrc := crc32.Checksum(b, crcTable)
-
-	// Compress
-	bc, ce := this._compress(b)
-	if ce != nil {
-		panic("Failed to compress")
-	}
-
-	log.Infof("Sending %d %s bytes for %s to %s", len(b), this.protocol, this.serviceName, node)
-
-	// Simple retry handler
-	var err error
-	for attempt := 1; attempt <= this.connectionPoolSize*2; attempt++ {
-		// Get socket
-		var conn net.Conn = *connection.conn
-
-		// Write data
-		// log.Infof("Writing %s", this.serviceName)
-		_, err = conn.Write(bc)
-
-		// Write magic footer
-		conn.Write(TRANSPORT_MAGIC_FOOTER)
-
-		// Validate
-		if err != nil {
-			log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
-
-			// Close socket
-			connection.Close()
-
-			// Create new
-			this._connect(node)
-
-			// Do not return connection, it's broken
-
-			// Get new connection
-			connection = this._getConnection(node)
-
-			// Attempt two
-			continue
-		} else {
-			log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
+		// Compress
+		bc, ce := this._compress(b)
+		if ce != nil {
+			panic("Failed to compress")
 		}
+
+		// CRC
+		sendCrc := crc32.Checksum(b, crcTable)
+
+		// Get socket
+		conn := tc.Conn()
+
+		// Before send log
+		log.Infof("Sending %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
+
+		// Write data + footer
+		_, errb = conn.Write(bc)
+		_, errf := conn.Write(TRANSPORT_MAGIC_FOOTER)
+
+		// OK?
+		if errb != nil || errf != nil {
+			// Uups..
+			this._discardConnection(node, tc)
+
+			// @todo sleep with jitter
+
+			// Try again
+			continue
+		}
+
+		// After send log
+		log.Infof("Sent %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
 
 		// Read ACK on this socket
 		// @Todo timeout ACK wait
-		// log.Infof("Waiting for ack %s", this.serviceName)
+		log.Infof("Waiting for ack %s", this.serviceName)
 		ackBytes := make([]byte, 4)
 		conn.Read(ackBytes)
 		ackBuf := bytes.NewReader(ackBytes)
@@ -361,21 +284,101 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 
 		// Validate CRC
 		if receivedCrc != sendCrc {
-			// Warning
 			log.Warnf("Acked transport bytes crc %d send crc %d", receivedCrc, sendCrc)
 
-			// Try again
+			// Discard and retry
+			this._discardConnection(node, tc)
 			continue
+		} else {
+			log.Infof("Ack passed for %d", sendCrc)
 		}
 
-		// log.Infof("Done %s", this.serviceName)
-		break
+		// Return connection
+		this._returnConnection(node, tc)
+
+		// OK :)
+		return nil
 	}
 
-	// Return client
-	this._returnConnection(node, connection)
+	return errb
 
-	return err
+	// OLD CODE BELOW
+
+	// // Get connection
+	// log.Infof("_send %s", this.serviceName)
+	// var connection *TransportConnection = this._getConnection(node)
+	// if connection == nil {
+	// 	return errors.New("Unable to get conection")
+	// }
+
+	// // CRC
+	// sendCrc := crc32.Checksum(b, crcTable)
+
+	// // Compress
+	// bc, ce := this._compress(b)
+	// if ce != nil {
+	// 	panic("Failed to compress")
+	// }
+
+	// log.Infof("Sending %d %s bytes for %s to %s over %s", len(b), this.protocol, this.serviceName, node, connection.id)
+
+	// // Simple retry handler
+	// var err error
+
+	// // Get socket
+	// var conn net.Conn = *connection.conn
+
+	// // Write data
+	// // log.Infof("Writing %s", this.serviceName)
+	// _, err = conn.Write(bc)
+
+	// // Write magic footer
+	// conn.Write(TRANSPORT_MAGIC_FOOTER)
+
+	// // Validate
+	// if err != nil {
+	// 	log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
+
+	// 	// Close socket
+	// 	connection.Close()
+
+	// 	// Create new
+	// 	go this._connect(node)
+
+	// 	// Do not return connection, it's broken
+
+	// 	// Attempt two
+	// 	return err
+	// } else {
+	// 	log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
+	// }
+
+	// // Read ACK on this socket
+	// // @Todo timeout ACK wait
+	// // log.Infof("Waiting for ack %s", this.serviceName)
+	// ackBytes := make([]byte, 4)
+	// conn.Read(ackBytes)
+	// ackBuf := bytes.NewReader(ackBytes)
+	// var receivedCrc uint32
+	// ackReadErr := binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
+	// panicErr(ackReadErr)
+
+	// // Validate CRC
+	// if receivedCrc != sendCrc {
+	// 	// Warning
+	// 	log.Warnf("Acked transport bytes crc %d send crc %d", receivedCrc, sendCrc)
+
+	// 	// Return client
+	// 	this._returnConnection(node, connection)
+
+	// 	// Try again
+	// 	return errors.New("CRC mismatch")
+	// }
+
+	// // Return client
+	// this._returnConnection(node, connection)
+
+	// return err
 }
 
 // Start
@@ -395,11 +398,11 @@ func (this *NetworkTransport) start() {
 // New NetworkTransport service
 func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int) *NetworkTransport {
 	g := &NetworkTransport{
-		connectionPoolSize: 2,
+		connectionPoolSize: 1,
 		protocol:           protocol,
 		port:               port,
 		serviceName:        serviceName,
-		connections:        make(map[string]chan *TransportConnection),
+		connections:        make(map[string]*TransportConnectionPool),
 		isConnecting:       make(map[string]bool),
 		receiveBufferLen:   receiveBufferLen,
 	}
