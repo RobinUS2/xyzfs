@@ -266,7 +266,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	_, err := conn.Write(bc)
 
 	// Write magic footer
-	conn.Write([]byte{'\r', '\n', 'X', 'Y', 'Z'})
+	conn.Write(TRANSPORT_MAGIC_FOOTER)
 
 	// Validate
 	if err != nil {
