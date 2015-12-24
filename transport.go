@@ -261,6 +261,7 @@ func (this *NetworkTransport) _returnConnection(node string, tc *TransportConnec
 		break
 	default:
 		// overflow
+		tc.Close()
 	}
 }
 
@@ -294,7 +295,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 			log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
 
 			// Close socket
-			conn.Close()
+			connection.Close()
 
 			// Do not return connection, it's broken
 
