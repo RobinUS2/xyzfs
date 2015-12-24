@@ -156,14 +156,17 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			panic("Failed to decompress")
 		}
 
+		// Read message
+		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
+
 		// Ack with checksum of decompressed received bytes
+		// this is after the message processing, to make it synchronous
+		// the client can become async to do something like "go transport._senc()"
+		// the receiver can become async by implementing the read message with a go routine
 		ackBuf := new(bytes.Buffer)
 		receivedCrc := crc32.Checksum(db, crcTable)
 		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
 		conn.Write(ackBuf.Bytes())
-
-		// Read message
-		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
 
 		// New buffer
 		tbuf = new(bytes.Buffer)
