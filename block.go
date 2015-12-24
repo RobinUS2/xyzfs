@@ -49,6 +49,9 @@ func (this *Block) initRemoteShards() (bool, error) {
 			return false, nodeSelectionErr
 		}
 		log.Infof("Routing add remote shard (%s) request to %s", dataShard.IdStr(), node)
+
+		// Send
+		binaryTransport._sendCreateShard(node, this.Id, dataShard.Id)
 	}
 
 	// Done
@@ -165,10 +168,17 @@ func (this *Block) FullPath() string {
 	return fmt.Sprintf("%s/b_%s", this.Volume().FullPath(), this.IdStr())
 }
 
+// New block
 func newBlock(v *Volume) *Block {
+	id := randomUuid()
+	return newBlockFromId(v, id)
+}
+
+// New block from ID
+func newBlockFromId(v *Volume, id []byte) *Block {
 	b := &Block{
 		volume:       v,
-		Id:           randomUuid(),
+		Id:           id,
 		DataShards:   make([]*Shard, 0),
 		ParityShards: make([]*Shard, 0),
 	}

@@ -21,9 +21,10 @@ type BinaryTransportMessageType uint32
 
 // Message types
 const (
-	EmptyBinaryTransportMessageType    BinaryTransportMessageType = iota // 0 = not set
-	ShardIdxBinaryTransportMessageType                                   // 1 = shard index
-	FileBinaryTransportMessageType                                       // 2 = file
+	EmptyBinaryTransportMessageType       BinaryTransportMessageType = iota // 0 = not set
+	ShardIdxBinaryTransportMessageType                                      // 1 = shard index
+	FileBinaryTransportMessageType                                          // 2 = file
+	CreateShardBinaryTransportMessageType                                   // 3 = create shard (replication)
 )
 
 // To bytes

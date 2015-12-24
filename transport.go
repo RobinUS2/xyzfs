@@ -31,8 +31,9 @@ type NetworkTransport struct {
 	_onMessage func(*TransportConnectionMeta, []byte)
 	_onConnect func(*TransportConnectionMeta, string)
 	// Connections
-	connections    map[string]chan *TransportConnection
-	connectionsMux sync.RWMutex
+	connectionPoolSize int
+	connections        map[string]chan *TransportConnection
+	connectionsMux     sync.RWMutex
 	// Is connecting
 	isConnectingMux sync.RWMutex
 	isConnecting    map[string]bool
@@ -143,6 +144,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	for {
 		// Reader until first \r
 		by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
+		log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
@@ -156,6 +158,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 		// Is this the end?
 		if this._validateMagicFooter(connbuf, 1, 4) == false {
+			log.Infof("Magic footer not yet found")
 			// Not yet, continue reading
 			continue
 		}
@@ -185,7 +188,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 }
 
 // Discover a single seed
-func (this *NetworkTransport) _connect(node string) *TransportConnection {
+func (this *NetworkTransport) _connect(node string) {
 	// Start contacting node
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
 	var conn net.Conn
@@ -212,43 +215,66 @@ func (this *NetworkTransport) _connect(node string) *TransportConnection {
 		break
 	}
 	if conn == nil {
-		return nil
+		log.Errorf("Failed to establish connection for %s", this.serviceName)
+		return
+	}
+
+	// Send HELLO message to new nodes
+	if this._onConnect != nil {
+		go func() {
+			this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+		}()
 	}
 
 	// Get channel
-	this.connectionsMux.RLock()
 	c := this.connections[node]
-	this.connectionsMux.RUnlock()
 
-	// Existing channel?
+	select {
+	case c <- newTransportConnection(node, &conn):
+		log.Infof("New transport connection %s", this.serviceName)
+		break
+	default:
+		log.Warnf("Connection pool overflow of %s", this.serviceName)
+	}
+}
+
+// Prepare connection
+func (this *NetworkTransport) _prepareConnection(node string) {
+	// Get channel
+	this.connectionsMux.Lock()
+	c := this.connections[node]
 	if c == nil {
-		this.connectionsMux.Lock()
-		this.connections[node] = make(chan *TransportConnection, 4) // @todo configure connection pool size
-		this.connectionsMux.Unlock()
+		log.Infof("Prepare connection channel for %s of %s", node, this.serviceName)
+		this.connections[node] = make(chan *TransportConnection, this.connectionPoolSize) // @todo configure connection pool size
+		c = this.connections[node]
 
-		// Send HELLO message
-		if this._onConnect != nil {
-			this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+		// Prepare actual connections
+		for i := 0; i < this.connectionPoolSize; i++ {
+			go this._connect(node)
 		}
 	}
-
-	return newTransportConnection(node, &conn)
+	this.connectionsMux.Unlock()
 }
 
 // Get connection
 func (this *NetworkTransport) _getConnection(node string) *TransportConnection {
-	// Get channel
+	// Prepare
+	this._prepareConnection(node)
+
+	// Chan
 	this.connectionsMux.RLock()
 	c := this.connections[node]
 	this.connectionsMux.RUnlock()
 
-	// Connection from channel
-	select {
-	case conn := <-c:
-		return conn
-	default:
-		return this._connect(node)
-	}
+	return <-c
+
+	// select {
+	// case conn := <-c:
+	// 	return conn
+	// default:
+	// 	panic("blocking get connection")
+	// 	return nil
+	// }
 }
 
 // Return connection
@@ -261,9 +287,11 @@ func (this *NetworkTransport) _returnConnection(node string, tc *TransportConnec
 	select {
 	case c <- tc:
 		// Into channel
+		log.Infof("Returned connection %s", this.serviceName)
 		break
 	default:
 		// overflow
+		log.Infof("Connection pool %s return overflow", this.serviceName)
 		tc.Close()
 	}
 }
@@ -276,9 +304,6 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		return errors.New("Unable to get conection")
 	}
 
-	// Get socket
-	var conn net.Conn = *connection.conn
-
 	// CRC
 	sendCrc := crc32.Checksum(b, crcTable)
 
@@ -288,9 +313,14 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		panic("Failed to compress")
 	}
 
+	log.Infof("Sending %d %s bytes for %s to %s", len(b), this.protocol, this.serviceName, node)
+
 	// Simple retry handler
 	var err error
-	for attempt := 1; attempt <= 3; attempt++ {
+	for attempt := 1; attempt <= this.connectionPoolSize*2; attempt++ {
+		// Get socket
+		var conn net.Conn = *connection.conn
+
 		// Write data
 		// log.Infof("Writing %s", this.serviceName)
 		_, err = conn.Write(bc)
@@ -304,6 +334,9 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 
 			// Close socket
 			connection.Close()
+
+			// Create new
+			this._connect(node)
 
 			// Do not return connection, it's broken
 
@@ -362,12 +395,13 @@ func (this *NetworkTransport) start() {
 // New NetworkTransport service
 func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int) *NetworkTransport {
 	g := &NetworkTransport{
-		protocol:         protocol,
-		port:             port,
-		serviceName:      serviceName,
-		connections:      make(map[string]chan *TransportConnection),
-		isConnecting:     make(map[string]bool),
-		receiveBufferLen: receiveBufferLen,
+		connectionPoolSize: 2,
+		protocol:           protocol,
+		port:               port,
+		serviceName:        serviceName,
+		connections:        make(map[string]chan *TransportConnection),
+		isConnecting:       make(map[string]bool),
+		receiveBufferLen:   receiveBufferLen,
 	}
 
 	// Compression

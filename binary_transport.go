@@ -57,6 +57,11 @@ func newBinaryTransport() *BinaryTransport {
 			b._receiveFileChunk(cmeta, msg)
 			break
 
+			// Create shard
+		case CreateShardBinaryTransportMessageType:
+			b._receiveCreateShard(cmeta, msg)
+			break
+
 			// Unknown
 		default:
 			log.Warnf("Received unknown binary TCP message %v", msg)

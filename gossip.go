@@ -19,16 +19,19 @@ type Gossip struct {
 // Discover seeds
 func (this *Gossip) discoverSeeds() {
 	for _, seed := range conf.Seeds {
-		go this.transport._connect(seed)
+		go this.transport._prepareConnection(seed)
 	}
 }
 
 // On handshake complete
 func (this *Gossip) _onHelloHandshakeComplete(node string) {
+	log.Infof("Completed gossip handshake with %s", node)
+
+	// Send node list
 	this._sendNodeList(node)
 
-	// Connect binary once handshake is complete
-	binaryTransport.transport._connect(node)
+	// Connect binary once handshake is complete (async)
+	go binaryTransport.transport._prepareConnection(node)
 }
 
 // Send message

@@ -104,13 +104,20 @@ func (this *Datastore) AllocateShardCapacity(fileMeta *FileMeta) *Shard {
 	return this.AllocateShardCapacity(fileMeta)
 }
 
+// Get volume
+func (this *Datastore) GetVolume() *Volume {
+	volumes := this.Volumes()
+	// @todo Improve volume allocator (e.g. least full / fastest)
+	volume := volumes[len(volumes)-1]
+	return volume
+}
+
 // New block
 func (this *Datastore) NewBlock() *Block {
 	log.Info("Allocating new block")
 
-	// @todo Improve volume allocator (e.g. least full / fastest)
-	volumes := this.Volumes()
-	volume := volumes[len(volumes)-1]
+	// Volume
+	volume := this.GetVolume()
 
 	// Create new block
 	b := newBlock(volume)

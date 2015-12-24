@@ -1,5 +1,9 @@
 package main
 
+import (
+	"bytes"
+)
+
 // Binary transport of shards to other nodes
 
 // Send shards
@@ -16,7 +20,7 @@ func (this *BinaryTransport) _sendShardIndices(node string) {
 func (this *BinaryTransport) _broadcastShardIndex(shard *Shard) {
 	// To all nodes
 	for _, ns := range gossip.GetNodeStates() {
-		this._sendShardIndex(shard, ns.Node)
+		go this._sendShardIndex(shard, ns.Node)
 	}
 }
 
@@ -47,4 +51,49 @@ func (this *BinaryTransport) _receiveShardIndex(cmeta *TransportConnectionMeta, 
 
 	// Load index
 	datastore.fileLocator.LoadIndex(cmeta.GetNode(), s.ShardId, s)
+}
+
+// Send create shard
+func (this *BinaryTransport) _sendCreateShard(node string, blockId []byte, shardId []byte) {
+	// Build message
+	buf := new(bytes.Buffer)
+	buf.Write(blockId)
+	buf.Write(shardId)
+
+	// Send
+	msg := newBinaryTransportMessage(CreateShardBinaryTransportMessageType, buf.Bytes())
+	this._send(node, msg)
+}
+
+// Receive create shard
+func (this *BinaryTransport) _receiveCreateShard(cmeta *TransportConnectionMeta, msg *BinaryTransportMessage) {
+	// Read message
+	buf := bytes.NewReader(msg.Data)
+	blockId := make([]byte, 16)
+	buf.Read(blockId)
+	shardId := make([]byte, 16)
+	buf.Read(shardId)
+
+	// Get volume
+	volume := datastore.GetVolume()
+
+	// Block
+	blockIdStr := uuidToString(blockId)
+	var block *Block = datastore.BlockByIdStr(blockIdStr)
+	if block == nil {
+		// New block
+		block = newBlockFromId(volume, blockId)
+
+		// Register new block
+		volume.RegisterBlock(block)
+	}
+
+	// Shard
+	shard := newShardFromId(block, shardId)
+
+	// Register shard
+	block.RegisterDataShard(shard)
+
+	// Persist shard
+	shard.Persist()
 }

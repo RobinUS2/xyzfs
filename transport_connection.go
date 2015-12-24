@@ -10,6 +10,7 @@ type TransportConnection struct {
 }
 
 func (this *TransportConnection) Close() {
+	log.Infof("Closing transport connection to %s", this.node)
 	if this.conn != nil {
 		(*this.conn).Close()
 		this.conn = nil
