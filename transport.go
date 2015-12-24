@@ -3,14 +3,18 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net"
 	"strings"
 	"sync"
 	"time"
 )
+
+var TRANSPORT_MAGIC_FOOTER []byte = []byte{'\r', '\n', 'X', 'Y', 'Z'}
 
 // Network transport layer
 
@@ -108,7 +112,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 	for {
 		// Reader until first \r
-		by, err := connbuf.ReadBytes('\r')
+		by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
@@ -122,7 +126,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 		// Is this the end?
 		byTerminator, _ := connbuf.ReadByte()
-		if byTerminator != '\n' {
+		if byTerminator != TRANSPORT_MAGIC_FOOTER[1] {
 			// Reverse
 			connbuf.UnreadByte()
 
@@ -132,13 +136,13 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 		// Validate final
 		// @todo Apply same principal with UnreadByte() as above
-		if val, _ := connbuf.ReadByte(); val != 'X' {
+		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[2] {
 			panic("Missed X from magic suffix")
 		}
-		if val, _ := connbuf.ReadByte(); val != 'Y' {
+		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[3] {
 			panic("Missed Y from magic suffix")
 		}
-		if val, _ := connbuf.ReadByte(); val != 'Z' {
+		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[4] {
 			panic("Missed Z from magic suffix")
 		}
 
@@ -148,6 +152,12 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			log.Errorf("Decompress error: %s", de)
 			panic("Failed to decompress")
 		}
+
+		// Ack with checksum of decompressed received bytes
+		ackBuf := new(bytes.Buffer)
+		receivedCrc := crc32.Checksum(db, crcTable)
+		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
+		conn.Write(ackBuf.Bytes())
 
 		// Read message
 		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
@@ -243,6 +253,9 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	var connection *TransportConnection = this.connections[node]
 	var conn net.Conn = *connection.conn
 
+	// CRC
+	sendCrc := crc32.Checksum(b, crcTable)
+
 	// Compress
 	bc, ce := this._compress(b)
 	if ce != nil {
@@ -264,6 +277,20 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	} else {
 		log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
 	}
+
+	// Read ACK on this socket
+	ackBytes := make([]byte, 4)
+	conn.Read(ackBytes)
+	ackBuf := bytes.NewReader(ackBytes)
+	var receivedCrc uint32
+	ackReadErr := binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
+	panicErr(ackReadErr)
+
+	// Validate CRC
+	if receivedCrc != sendCrc {
+		panic(fmt.Sprintf("Acked transport bytes crc %d send crc %d", receivedCrc, sendCrc))
+	}
+
 	return err
 }
 

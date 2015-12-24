@@ -142,14 +142,14 @@ func (this *Shard) Persist() {
 }
 
 // Load from disk
-func (this *Shard) Load() {
+func (this *Shard) Load() (bool, error) {
 	this.isLoadedMux.Lock()
 	defer this.isLoadedMux.Unlock()
 
 	// Already loaded
 	if this.isLoaded {
 		// Yes
-		return
+		return true, nil
 	}
 
 	// Load
@@ -158,11 +158,12 @@ func (this *Shard) Load() {
 	if e != nil || !res {
 		log.Errorf("Failed to load shard %s from disk in %s: %s", this.IdStr(), this.FullPath(), e)
 		// Error
-		return
+		return false, e
 	}
 
 	// Done
 	this.isLoaded = true
+	return true, nil
 }
 
 // Full path

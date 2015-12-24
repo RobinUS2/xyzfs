@@ -108,7 +108,13 @@ func TestNewFile(t *testing.T) {
 	shard.shardFileMeta = nil
 
 	// Read from disk
-	shard.Load()
+	loadRes, loadErr := shard.Load()
+	if !loadRes {
+		t.Error("Failed to load shard")
+	}
+	if loadErr != nil {
+		t.Errorf("Failed to load shard: %s", loadErr)
+	}
 
 	// Validate (no need to check contents as those are not used directly)
 	if shard.shardIndex == nil {
