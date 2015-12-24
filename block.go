@@ -20,7 +20,7 @@ type Block struct {
 	ParityShards []*Shard
 }
 
-// Init shards
+// Init local shards
 func (this *Block) initShards() {
 	for i := 0; i < conf.DataShardsPerBlock; i++ {
 		shard := newShard(this)
@@ -33,6 +33,26 @@ func (this *Block) initShards() {
 		shard.BlockIndex = uint(i + conf.DataShardsPerBlock)
 		this.RegisterParityShard(shard)
 	}
+}
+
+// Init remote shards
+func (this *Block) initRemoteShards() (bool, error) {
+	// Router criteria
+	criteria := newNodeRouterCriteria()
+	criteria.ExcludeLocalNodes = true
+
+	// For each data shard
+	for _, dataShard := range this.DataShards {
+		// Pick random remote node
+		node, nodeSelectionErr := datastore.nodeRouter.PickNode(criteria)
+		if nodeSelectionErr != nil {
+			return false, nodeSelectionErr
+		}
+		log.Infof("Routing add remote shard (%s) request to %s", dataShard.IdStr(), node)
+	}
+
+	// Done
+	return true, nil
 }
 
 // To string

@@ -54,7 +54,7 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 		chunks = append(chunks, chunks[0])
 
 		// Randomize to fake order
-		chunksShuffled := shuffle(chunks)
+		chunksShuffled := shuffleBinaryTransportMessage(chunks)
 
 		// Add messages to receiver
 		var done bool = false
@@ -92,7 +92,7 @@ func TestBinaryTransportFileSplitter(t *testing.T) {
 }
 
 // Randomize order
-func shuffle(arr []*BinaryTransportMessage) []*BinaryTransportMessage {
+func shuffleBinaryTransportMessage(arr []*BinaryTransportMessage) []*BinaryTransportMessage {
 	t := time.Now()
 	rand.Seed(int64(t.Nanosecond())) // no shuffling without this line
 

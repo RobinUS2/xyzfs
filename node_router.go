@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"math/rand"
+	"time"
 )
 
 // Router to nodes
@@ -10,29 +11,60 @@ type NodeRouter struct {
 }
 
 // Pick node
-func (this *NodeRouter) PickNode() (string, error) {
-	// @todo smarter node selection, e.g. https://labs.spotify.com/2015/12/08/els-part-1/
-	nodes := gossip.GetNodeStates()
-	nodeCount := len(nodes)
+func (this *NodeRouter) PickNode(criteria *NodeRouterCriteria) (string, error) {
+	nodesMap := gossip.GetNodeStates()
+	inputNodes := make([]*GossipNodeState, 0)
+	for _, ns := range nodesMap {
+		inputNodes = append(inputNodes, ns)
+	}
+	nodeCount := len(inputNodes)
 
-	// No nodes? Route to localhost
+	// No nodes? Add route to localhost
 	if nodeCount == 0 {
-		return runtime.GetNode(), nil
+		inputNodes = append(inputNodes, gossip.GetNodeState(runtime.GetNode()))
 	}
 
-	// Select
-	selected := rand.Intn(nodeCount)
-	i := 0
-	for _, node := range nodes {
-		if i == selected {
-			return node.Node, nil
+	// Apply criteria
+	if criteria != nil {
+		tmp := make([]*GossipNodeState, 0)
+		for _, inputNode := range inputNodes {
+			// Local route?
+			if criteria.ExcludeLocalNodes {
+				if inputNode.Node == runtime.GetNode() || inputNode.Node == "localhost" || inputNode.Node == "127.0.0.1" {
+					continue
+				}
+			}
+			tmp = append(tmp, inputNode)
 		}
-		i++
+		inputNodes = tmp
 	}
-	return "", errors.New("Unable to pick node from router")
+
+	// Anything left after filtering?
+	if len(inputNodes) < 1 {
+		return "", errors.New("Unable to pick node from router")
+	}
+
+	// Randomize nodes
+	nodes := shuffleGossipNodeStates(inputNodes)
+
+	// Return first node (after shuffling above)
+	// @todo smarter node selection, e.g. https://labs.spotify.com/2015/12/08/els-part-1/
+	return nodes[0].Node, nil
 }
 
 // New router
 func newNodeRouter() *NodeRouter {
 	return &NodeRouter{}
+}
+
+// Randomize order
+func shuffleGossipNodeStates(arr []*GossipNodeState) []*GossipNodeState {
+	t := time.Now()
+	rand.Seed(int64(t.Nanosecond())) // no shuffling without this line
+
+	for i := len(arr) - 1; i > 0; i-- {
+		j := rand.Intn(i)
+		arr[i], arr[j] = arr[j], arr[i]
+	}
+	return arr
 }

@@ -40,11 +40,11 @@ func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
 	}
 
 	// Select node on where to execute this (it will be written there locally to a shard with space)
-	node, nodeSelectionErr := this.nodeRouter.PickNode()
+	node, nodeSelectionErr := this.nodeRouter.PickNode(nil)
 	if nodeSelectionErr != nil {
 		return false, nodeSelectionErr
 	}
-	log.Debugf("Routing add file request to %s", node)
+	log.Infof("Routing add file request to %s", node)
 
 	// Create meta
 	fileMeta := newFileMeta(fullName)
@@ -108,8 +108,9 @@ func (this *Datastore) AllocateShardCapacity(fileMeta *FileMeta) *Shard {
 func (this *Datastore) NewBlock() *Block {
 	log.Info("Allocating new block")
 
-	// @todo Improve volume allocator (e.g. random/least full)
-	volume := conf.Datastore.Volumes[0]
+	// @todo Improve volume allocator (e.g. least full / fastest)
+	volumes := this.Volumes()
+	volume := volumes[len(volumes)-1]
 
 	// Create new block
 	b := newBlock(volume)
@@ -120,10 +121,11 @@ func (this *Datastore) NewBlock() *Block {
 	// Register block (takes care of shard registration internally)
 	volume.RegisterBlock(b)
 
-	// @todo replicate shard to other host
-	// @todo store shard replication information on disk + in-memory
-	// @todo replicate shard index to primary hosts via TCP
-	// @todo replicate shard index to non-primary hosts via UDP
+	// Replicate shard to other host
+	_, remoteErr := b.initRemoteShards()
+	if remoteErr != nil {
+		log.Errorf("Failed to initialize remote shards: %s", remoteErr)
+	}
 
 	return b
 }
