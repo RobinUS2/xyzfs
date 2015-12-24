@@ -90,7 +90,7 @@ func (this *NetworkTransport) _listenUdp() {
 	for {
 		tbuf := make([]byte, this.receiveBufferLen)
 		n, addr, err := ln.ReadFromUDP(tbuf)
-		log.Infof("Received ", string(tbuf[0:n]), " from ", addr)
+		log.Debugf("Received ", string(tbuf[0:n]), " from ", addr)
 
 		if err != nil {
 			log.Errorf("UDP receive error: %s", err)
@@ -99,6 +99,25 @@ func (this *NetworkTransport) _listenUdp() {
 			this._onMessage(newTransportConnectionMeta(ln.RemoteAddr().String()), tbuf[0:n])
 		}
 	}
+}
+
+// Validate magic footer, returns true if all have passed
+func (this *NetworkTransport) _validateMagicFooter(connbuf *bufio.Reader, magicStart int, magicEnd int) bool {
+	for i := magicStart; i <= magicEnd; i++ {
+		// Read byte
+		byTerminator, _ := connbuf.ReadByte()
+
+		// Is this the correct footer byte?
+		if byTerminator != TRANSPORT_MAGIC_FOOTER[i] {
+			// Put data back in bufffer
+			connbuf.UnreadByte()
+
+			// Not valid
+			return false
+		}
+	}
+	// All good
+	return true
 }
 
 // Handle connection
@@ -125,25 +144,9 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		tbuf.Write(by)
 
 		// Is this the end?
-		byTerminator, _ := connbuf.ReadByte()
-		if byTerminator != TRANSPORT_MAGIC_FOOTER[1] {
-			// Reverse
-			connbuf.UnreadByte()
-
-			// Continue reading rest
+		if this._validateMagicFooter(connbuf, 1, 4) == false {
+			// Not yet, continue reading
 			continue
-		}
-
-		// Validate final
-		// @todo Apply same principal with UnreadByte() as above
-		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[2] {
-			panic("Missed X from magic suffix")
-		}
-		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[3] {
-			panic("Missed Y from magic suffix")
-		}
-		if val, _ := connbuf.ReadByte(); val != TRANSPORT_MAGIC_FOOTER[4] {
-			panic("Missed Z from magic suffix")
 		}
 
 		// Decompress

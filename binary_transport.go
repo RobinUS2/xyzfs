@@ -44,7 +44,7 @@ func newBinaryTransport() *BinaryTransport {
 		msg := &BinaryTransportMessage{}
 		msg.FromBytes(by)
 
-		log.Infof("Received binary TCP message %d bytes", len(by))
+		log.Debugf("Received binary TCP message %d bytes", len(by))
 
 		switch msg.Type {
 		// Shard index
