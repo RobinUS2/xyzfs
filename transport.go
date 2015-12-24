@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	// "errors"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -190,7 +190,7 @@ func (this *NetworkTransport) _connect(node string) *TransportConnection {
 	log.Infof("Contacting node %s for %s", node, this.serviceName)
 	var conn net.Conn
 	var err error
-	for {
+	for i := 0; i < 5; i++ {
 		conn, err = net.Dial(this.protocol, fmt.Sprintf("%s:%d", node, this.port))
 		if err != nil {
 			// handle error
@@ -202,7 +202,7 @@ func (this *NetworkTransport) _connect(node string) *TransportConnection {
 			}
 
 			// Wait a bit
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 
 			// Try again
 			continue
@@ -210,6 +210,9 @@ func (this *NetworkTransport) _connect(node string) *TransportConnection {
 
 		log.Infof("Established connection with node %s for %s", node, this.serviceName)
 		break
+	}
+	if conn == nil {
+		return nil
 	}
 
 	// Get channel
@@ -267,8 +270,13 @@ func (this *NetworkTransport) _returnConnection(node string, tc *TransportConnec
 
 // Send message
 func (this *NetworkTransport) _send(node string, b []byte) error {
-	// get connection
+	// Get connection
 	var connection *TransportConnection = this._getConnection(node)
+	if connection == nil {
+		return errors.New("Unable to get conection")
+	}
+
+	// Get socket
 	var conn net.Conn = *connection.conn
 
 	// CRC
@@ -284,7 +292,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	var err error
 	for attempt := 1; attempt <= 3; attempt++ {
 		// Write data
-		log.Infof("Writing %s", this.serviceName)
+		// log.Infof("Writing %s", this.serviceName)
 		_, err = conn.Write(bc)
 
 		// Write magic footer
@@ -305,12 +313,12 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 			// Attempt two
 			continue
 		} else {
-			log.Infof("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
+			log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
 		}
 
 		// Read ACK on this socket
 		// @Todo timeout ACK wait
-		log.Infof("Waiting for ack %s", this.serviceName)
+		// log.Infof("Waiting for ack %s", this.serviceName)
 		ackBytes := make([]byte, 4)
 		conn.Read(ackBytes)
 		ackBuf := bytes.NewReader(ackBytes)
@@ -327,7 +335,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 			continue
 		}
 
-		log.Infof("Done %s", this.serviceName)
+		// log.Infof("Done %s", this.serviceName)
 		break
 	}
 

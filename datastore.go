@@ -77,7 +77,7 @@ func (this *Datastore) BlockByIdStr(id string) *Block {
 }
 
 // Find shard
-func (this *Datastore) ShardByIdStr(id string) *Shard {
+func (this *Datastore) LocalShardByIdStr(id string) *Shard {
 	for _, volume := range this.Volumes() {
 		for _, shard := range volume.Shards() {
 			if shard.IdStr() == id {

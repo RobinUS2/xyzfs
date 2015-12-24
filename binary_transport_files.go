@@ -127,10 +127,14 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 
 		// Has target shard?
 		if receiver.targetShardId != nil {
-			targetShard = datastore.ShardByIdStr(uuidToString(receiver.targetShardId))
+			// Has target shard
+			targetShard = datastore.LocalShardByIdStr(uuidToString(receiver.targetShardId))
 		} else {
+			// No target shard
 			targetShard = datastore.AllocateShardCapacity(receiver.fileMeta)
 		}
+
+		// Target shard must be non-nil
 		if targetShard == nil {
 			panic("Unexpected nil target shard")
 		}
@@ -141,6 +145,31 @@ func (this *BinaryTransport) _receiveFileChunk(cmeta *TransportConnectionMeta, m
 
 		// Persist shard
 		targetShard.Persist()
+
+		// We should replicate if there's no target shard specified
+		if receiver.targetShardId == nil {
+			// Figure out other targets
+			targetShardLocations := datastore.fileLocator.ShardLocationsByIdStr(targetShard.IdStr())
+			if len(targetShardLocations) > 1 {
+				for _, targetShardLocation := range targetShardLocations {
+					// Skip local shards
+					if targetShardLocation.Local {
+						continue
+					}
+
+					// Replicate
+					log.Infof("Replicate file to shard location %v", targetShardLocation)
+
+					// Split file
+					msgs := datastore.fileSplitter.Split(writeResFileMeta, b, targetShard.Id)
+
+					// Send chunks to remote node
+					for _, msg := range msgs {
+						this._sendFileChunk(targetShardLocation.Node, msg)
+					}
+				}
+			}
+		}
 
 		// Log
 		if writeResFileMeta != nil {

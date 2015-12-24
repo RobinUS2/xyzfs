@@ -26,15 +26,15 @@ func (this *BinaryTransport) _sendShardIndex(shard *Shard, node string) {
 
 	// To bytes
 	b := shard.ShardIndex().Bytes()
-	log.Infof("Start idx serialized %s", shard.IdStr())
+	// log.Infof("Start idx serialized %s", shard.IdStr())
 
 	// Msg
 	msg := newBinaryTransportMessage(ShardIdxBinaryTransportMessageType, b)
 
 	// Send
-	log.Infof("Start idx send %s", shard.IdStr())
+	// log.Infof("Start idx send %s", shard.IdStr())
 	this._send(node, msg)
-	log.Infof("Shard idx %s sent", shard.IdStr())
+	// log.Infof("Shard idx %s sent", shard.IdStr())
 }
 
 // Receive single shard

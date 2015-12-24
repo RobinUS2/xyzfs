@@ -119,7 +119,7 @@ func (this *FileLocator) _addShardNodeMapping(shardId []byte, node string, local
 	this.shardLocationsMux.Unlock()
 }
 
-// Get shard locations
+// Get all shard locations
 func (this *FileLocator) ShardLocations() map[string][]*ShardLocation {
 
 	// Local shards
@@ -133,6 +133,11 @@ func (this *FileLocator) ShardLocations() map[string][]*ShardLocation {
 	this.shardLocationsMux.RLock()
 	defer this.shardLocationsMux.RUnlock()
 	return this.shardLocations
+}
+
+// Get single shard location by id
+func (this *FileLocator) ShardLocationsByIdStr(shardId string) []*ShardLocation {
+	return this.ShardLocations()[shardId]
 }
 
 // New
