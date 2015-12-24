@@ -155,6 +155,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 		// Write to buffer
 		tbuf.Write(by)
+		log.Infof("tbuf now %d", len(tbuf.Bytes()))
 
 		// Is this the end?
 		if this._validateMagicFooter(connbuf, 1, 4) == false {
@@ -195,13 +196,15 @@ func (this *NetworkTransport) _prepareConnection(node string) {
 		this.connections[node] = newTransportConnectionPool(this, node, 4)
 
 		// Send HELLO message to new nodes
-		// if this._onConnect != nil {
-		// 	go func() {
-		// 		connection := <-c
-		// 		conn := *connection.conn
-		// 		this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
-		// 	}()
-		// }
+		if this._onConnect != nil {
+			// Begin gossip
+			go func() {
+				tc := this.connections[node].GetConnection()
+				conn := tc.Conn()
+				this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+				this.connections[node].ReturnConnection(tc)
+			}()
+		}
 	}
 	this.connectionsMux.Unlock()
 }

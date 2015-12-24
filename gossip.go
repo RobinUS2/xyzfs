@@ -122,7 +122,6 @@ func newGossip() *Gossip {
 			// Re-transmit indices
 			binaryTransport._sendShardIndices(node)
 		}
-		nodeState.Reset()
 
 		// Send hello
 		g._sendHello(node)
