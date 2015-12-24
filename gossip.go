@@ -120,11 +120,11 @@ func newGossip() *Gossip {
 		nodeState := g.GetNodeState(node)
 		if nodeState.GetLastHelloReceived() > 0 {
 			// Re-transmit indices
-			binaryTransport._sendShardIndices(node)
+			go binaryTransport._sendShardIndices(node)
 		}
 
 		// Send hello
-		g._sendHello(node)
+		go g._sendHello(node)
 	}
 
 	// Start

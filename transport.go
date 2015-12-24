@@ -193,16 +193,18 @@ func (this *NetworkTransport) _prepareConnection(node string) {
 	// Get channel
 	this.connectionsMux.Lock()
 	if this.connections[node] == nil {
-		this.connections[node] = newTransportConnectionPool(this, node, 4)
+		this.connections[node] = newTransportConnectionPool(this, node, 1)
 
 		// Send HELLO message to new nodes
 		if this._onConnect != nil {
-			// Begin gossip
+			// On-connect
 			go func() {
+				log.Infof("Starting on-connect to %s for %s", node, this.serviceName)
 				tc := this.connections[node].GetConnection()
 				conn := tc.Conn()
 				this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
 				this.connections[node].ReturnConnection(tc)
+				log.Infof("Executed on-connect to %s for %s", node, this.serviceName)
 			}()
 		}
 	}

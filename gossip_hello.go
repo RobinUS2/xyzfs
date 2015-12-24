@@ -42,7 +42,7 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 
 	// Handshake complete?
 	if state.GetLastHelloReceived() == 0 {
-		this._onHelloHandshakeComplete(cmeta.GetNode())
+		go this._onHelloHandshakeComplete(cmeta.GetNode())
 	}
 
 	// We have received hello
@@ -51,6 +51,6 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 	// Should we send something back immediately?
 	timeSinceLastHelloSent := unixTsUint32() - state.GetLastHelloSent()
 	if timeSinceLastHelloSent > conf.GossipHelloInterval {
-		this._sendHello(cmeta.GetNode())
+		go this._sendHello(cmeta.GetNode())
 	}
 }
