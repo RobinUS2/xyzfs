@@ -48,8 +48,9 @@ func (this *TransportConnectionPool) _addConnection() {
 }
 
 // New pool
-func newTransportConnectionPool(t *NetworkTransport, n int) *TransportConnectionPool {
+func newTransportConnectionPool(t *NetworkTransport, node string, n int) *TransportConnectionPool {
 	o := &TransportConnectionPool{
+		Node:      node,
 		Transport: t,
 		Chan:      make(chan *TransportConnection, n),
 		PoolSize:  n,

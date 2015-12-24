@@ -38,6 +38,7 @@ func (this *TransportConnection) Connect() {
 
 func newTransportConnection(pool *TransportConnectionPool) *TransportConnection {
 	return &TransportConnection{
+		node: pool.Node,
 		pool: pool,
 		id:   uuidToString(randomUuid()),
 	}

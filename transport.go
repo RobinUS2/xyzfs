@@ -192,7 +192,7 @@ func (this *NetworkTransport) _prepareConnection(node string) {
 	// Get channel
 	this.connectionsMux.Lock()
 	if this.connections[node] == nil {
-		this.connections[node] = newTransportConnectionPool(this, 4)
+		this.connections[node] = newTransportConnectionPool(this, node, 4)
 
 		// Send HELLO message to new nodes
 		// if this._onConnect != nil {
