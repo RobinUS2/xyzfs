@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 // Binary transport of shards to other nodes
@@ -35,6 +36,35 @@ func (this *BinaryTransport) _getFileReceiver(cmeta *TransportConnectionMeta, tr
 	return this.fileReceivers[k]
 }
 
+// Cleanup receivers
+func (this *BinaryTransport) _cleanupReceivers() {
+	// List of stale items
+	stale := make([]string, 0)
+
+	// Scan
+	this.fileReceiversMux.RLock()
+	for k, receiver := range this.fileReceivers {
+		// Too long ago?
+		if time.Now().Sub(receiver.GetLastChunkReceived()).Seconds() > 60 {
+			log.Warnf("Removing file %s receiver which didn't have data in timeout period", k)
+			stale = append(stale, k)
+		}
+	}
+	this.fileReceiversMux.RUnlock()
+
+	// Found?
+	if len(stale) < 1 {
+		return
+	}
+
+	// Remove
+	this.fileReceiversMux.Lock()
+	for _, k := range stale {
+		delete(this.fileReceivers, k)
+	}
+	this.fileReceiversMux.Unlock()
+}
+
 // File receiver key
 func (this *BinaryTransport) _fileReceiverKey(cmeta *TransportConnectionMeta, transferId uint32) string {
 	return fmt.Sprintf("%s~seq%d", cmeta.GetNode(), transferId)
@@ -49,6 +79,11 @@ func (this *BinaryTransport) _removeFileReceiver(cmeta *TransportConnectionMeta,
 	this.fileReceiversMux.Lock()
 	delete(this.fileReceivers, k)
 	this.fileReceiversMux.Unlock()
+
+	// Every now and then cleanup
+	if transferId%10 == 0 {
+		go this._cleanupReceivers()
+	}
 }
 
 // Receive file

@@ -6,10 +6,12 @@ import (
 	"errors"
 	"hash/crc32"
 	"sync"
+	"time"
 )
 
 // Receiver, should only be used for one file
 type BinaryTransportFileReceiver struct {
+	lastChunkReceived  time.Time
 	mux                sync.RWMutex
 	fileMeta           *FileMeta
 	data               *bytes.Buffer
@@ -20,6 +22,11 @@ type BinaryTransportFileReceiver struct {
 
 // Receive chunk, returns true if done
 func (this *BinaryTransportFileReceiver) Add(buf *bytes.Reader) bool {
+	// Update last chunk received
+	this.mux.Lock()
+	this.lastChunkReceived = time.Now()
+	this.mux.Unlock()
+
 	// Read chunk number
 	var err error
 	var chunkNumber uint32
@@ -47,6 +54,13 @@ func (this *BinaryTransportFileReceiver) Add(buf *bytes.Reader) bool {
 	this.mux.RLock()
 	defer this.mux.RUnlock()
 	return uint32(len(this.receivedDataChunks)) == this.chunkCount
+}
+
+// Get last chunk received time
+func (this *BinaryTransportFileReceiver) GetLastChunkReceived() time.Time {
+	this.mux.RLock()
+	defer this.mux.RUnlock()
+	return this.lastChunkReceived
 }
 
 // Read first chunk
@@ -164,5 +178,6 @@ func newBinaryTransportFileReceiver() *BinaryTransportFileReceiver {
 	return &BinaryTransportFileReceiver{
 		fileMeta:           nil,
 		receivedDataChunks: make(map[uint32][]byte),
+		lastChunkReceived:  time.Now(),
 	}
 }
