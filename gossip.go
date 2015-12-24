@@ -71,7 +71,7 @@ func (this *Gossip) GetNodeState(node string) *GossipNodeState {
 func newGossip() *Gossip {
 	// Create gossip
 	g := &Gossip{
-		transport: newNetworkTransport("tcp", "gossip", conf.GossipPort, conf.GossipTransportReadBuffer),
+		transport: newNetworkTransport("tcp", "gossip", conf.GossipPort, conf.GossipTransportReadBuffer, false),
 		nodes:     make(map[string]*GossipNodeState),
 	}
 

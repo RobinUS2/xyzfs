@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 type TransportConnection struct {
@@ -13,6 +14,15 @@ type TransportConnection struct {
 }
 
 func (this *TransportConnection) Conn() net.Conn {
+	// Try connect
+	if this.conn == nil {
+		this.Connect()
+	}
+	// Still not worked?
+	if this.conn == nil {
+		return nil
+	}
+	// Yes connection
 	return *this.conn
 }
 
@@ -29,11 +39,18 @@ func (this *TransportConnection) Connect() {
 	this.Close()
 
 	// Connect
-	conn, conE := net.Dial(this.pool.Transport.protocol, fmt.Sprintf("%s:%d", this.pool.Node, this.pool.Transport.port))
-	if conE != nil {
-		log.Errorf("Failed to connect to %s: %s", this.node, conE)
+	for i := 0; i < 5; i++ {
+		conn, conE := net.Dial(this.pool.Transport.protocol, fmt.Sprintf("%s:%d", this.pool.Node, this.pool.Transport.port))
+		if conE != nil {
+			log.Errorf("Failed to connect to %s: %s", this.node, conE)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		// Yay!
+		this.conn = &conn
+		break
 	}
-	this.conn = &conn
 }
 
 func newTransportConnection(pool *TransportConnectionPool) *TransportConnection {

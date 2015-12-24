@@ -19,6 +19,7 @@ var TRANSPORT_MAGIC_FOOTER []byte = []byte{'\r', '\n', 'X', 'Y', 'Z'}
 // Network transport layer
 
 type NetworkTransport struct {
+	traceLog bool
 	// Generic mutex
 	mux sync.RWMutex
 	// Config
@@ -144,7 +145,9 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	for {
 		// Reader until first \r
 		by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
-		log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
+		if this.traceLog {
+			log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
+		}
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
@@ -155,11 +158,15 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 
 		// Write to buffer
 		tbuf.Write(by)
-		log.Infof("tbuf now %d", len(tbuf.Bytes()))
+		if this.traceLog {
+			log.Infof("tbuf now %d", len(tbuf.Bytes()))
+		}
 
 		// Is this the end?
 		if this._validateMagicFooter(connbuf, 1, 4) == false {
-			log.Infof("Magic footer not yet found")
+			if this.traceLog {
+				log.Infof("Magic footer not yet found")
+			}
 			// Not yet, continue reading
 			continue
 		}
@@ -182,6 +189,9 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		receivedCrc := crc32.Checksum(db, crcTable)
 		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
 		conn.Write(ackBuf.Bytes())
+		if this.traceLog {
+			log.Infof("Sending ack %d to %s for %s", receivedCrc, conn.RemoteAddr().String(), this.serviceName)
+		}
 
 		// New buffer
 		tbuf = new(bytes.Buffer)
@@ -202,9 +212,11 @@ func (this *NetworkTransport) _prepareConnection(node string) {
 				log.Infof("Starting on-connect to %s for %s", node, this.serviceName)
 				tc := this.connections[node].GetConnection()
 				conn := tc.Conn()
-				this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+				if conn != nil {
+					this._onConnect(newTransportConnectionMeta(conn.RemoteAddr().String()), node)
+					log.Infof("Executed on-connect to %s for %s", node, this.serviceName)
+				}
 				this.connections[node].ReturnConnection(tc)
-				log.Infof("Executed on-connect to %s for %s", node, this.serviceName)
 			}()
 		}
 	}
@@ -238,26 +250,37 @@ func (this *NetworkTransport) _discardConnection(node string, tc *TransportConne
 
 // Send message
 func (this *NetworkTransport) _send(node string, b []byte) error {
+
+	// Compress
+	bc, ce := this._compress(b)
+	if ce != nil {
+		panic("Failed to compress")
+	}
+
+	// CRC
+	sendCrc := crc32.Checksum(b, crcTable)
+
 	// Retries
 	var errb error
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 2; i++ {
 		// Get connection
 		tc := this._getConnection(node)
-
-		// Compress
-		bc, ce := this._compress(b)
-		if ce != nil {
-			panic("Failed to compress")
-		}
-
-		// CRC
-		sendCrc := crc32.Checksum(b, crcTable)
 
 		// Get socket
 		conn := tc.Conn()
 
+		// Socket received?
+		if conn == nil {
+			log.Warnf("Unable to get socket on connection %s to %s for %s", tc.id, node, this.serviceName)
+
+			// Try again
+			continue
+		}
+
 		// Before send log
-		log.Infof("Sending %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
+		if this.traceLog {
+			log.Infof("Sending %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
+		}
 
 		// Write data + footer
 		_, errb = conn.Write(bc)
@@ -275,11 +298,15 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		}
 
 		// After send log
-		log.Infof("Sent %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
+		if this.traceLog {
+			log.Infof("Sent %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
+		}
 
 		// Read ACK on this socket
 		// @Todo timeout ACK wait
-		log.Infof("Waiting for ack %s", this.serviceName)
+		if this.traceLog {
+			log.Infof("Waiting for ack %s", this.serviceName)
+		}
 		ackBytes := make([]byte, 4)
 		conn.Read(ackBytes)
 		ackBuf := bytes.NewReader(ackBytes)
@@ -295,7 +322,9 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 			this._discardConnection(node, tc)
 			continue
 		} else {
-			log.Infof("Ack passed for %d", sendCrc)
+			if this.traceLog {
+				log.Infof("Ack passed for %d", sendCrc)
+			}
 		}
 
 		// Return connection
@@ -306,84 +335,6 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	}
 
 	return errb
-
-	// OLD CODE BELOW
-
-	// // Get connection
-	// log.Infof("_send %s", this.serviceName)
-	// var connection *TransportConnection = this._getConnection(node)
-	// if connection == nil {
-	// 	return errors.New("Unable to get conection")
-	// }
-
-	// // CRC
-	// sendCrc := crc32.Checksum(b, crcTable)
-
-	// // Compress
-	// bc, ce := this._compress(b)
-	// if ce != nil {
-	// 	panic("Failed to compress")
-	// }
-
-	// log.Infof("Sending %d %s bytes for %s to %s over %s", len(b), this.protocol, this.serviceName, node, connection.id)
-
-	// // Simple retry handler
-	// var err error
-
-	// // Get socket
-	// var conn net.Conn = *connection.conn
-
-	// // Write data
-	// // log.Infof("Writing %s", this.serviceName)
-	// _, err = conn.Write(bc)
-
-	// // Write magic footer
-	// conn.Write(TRANSPORT_MAGIC_FOOTER)
-
-	// // Validate
-	// if err != nil {
-	// 	log.Warnf("Failed to write %d %s bytes to %s: %s", len(b), this.serviceName, node, err)
-
-	// 	// Close socket
-	// 	connection.Close()
-
-	// 	// Create new
-	// 	go this._connect(node)
-
-	// 	// Do not return connection, it's broken
-
-	// 	// Attempt two
-	// 	return err
-	// } else {
-	// 	log.Debugf("Written %d (raw %d) %s bytes to %s", len(bc), len(b), this.serviceName, node)
-	// }
-
-	// // Read ACK on this socket
-	// // @Todo timeout ACK wait
-	// // log.Infof("Waiting for ack %s", this.serviceName)
-	// ackBytes := make([]byte, 4)
-	// conn.Read(ackBytes)
-	// ackBuf := bytes.NewReader(ackBytes)
-	// var receivedCrc uint32
-	// ackReadErr := binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
-	// panicErr(ackReadErr)
-
-	// // Validate CRC
-	// if receivedCrc != sendCrc {
-	// 	// Warning
-	// 	log.Warnf("Acked transport bytes crc %d send crc %d", receivedCrc, sendCrc)
-
-	// 	// Return client
-	// 	this._returnConnection(node, connection)
-
-	// 	// Try again
-	// 	return errors.New("CRC mismatch")
-	// }
-
-	// // Return client
-	// this._returnConnection(node, connection)
-
-	// return err
 }
 
 // Start
@@ -401,7 +352,7 @@ func (this *NetworkTransport) start() {
 }
 
 // New NetworkTransport service
-func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int) *NetworkTransport {
+func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int, traceLog bool) *NetworkTransport {
 	g := &NetworkTransport{
 		connectionPoolSize: 1,
 		protocol:           protocol,
@@ -410,6 +361,7 @@ func newNetworkTransport(protocol string, serviceName string, port int, receiveB
 		connections:        make(map[string]*TransportConnectionPool),
 		isConnecting:       make(map[string]bool),
 		receiveBufferLen:   receiveBufferLen,
+		traceLog:           traceLog,
 	}
 
 	// Compression

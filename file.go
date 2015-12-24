@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/spaolacci/murmur3"
 	"hash/crc32"
 )
@@ -52,7 +53,7 @@ func (this *FileMeta) FromBytes(b []byte) {
 	nameBytes := make([]byte, nameLen)
 	nameBytesRead, _ := buf.Read(nameBytes)
 	if uint32(nameBytesRead) != nameLen {
-		panic("Name bytes read mismatch")
+		panic(fmt.Sprintf("Name bytes read mismatch: %v", b))
 	}
 	this.FullName = string(nameBytes)
 

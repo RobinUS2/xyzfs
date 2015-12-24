@@ -88,6 +88,15 @@ func (this *BinaryTransport) _receiveCreateShard(cmeta *TransportConnectionMeta,
 		volume.RegisterBlock(block)
 	}
 
+	// Shard already existing?
+	shardIdStr := uuidToString(shardId)
+	for _, bs := range block.DataShards {
+		if bs.IdStr() == shardIdStr {
+			log.Infof("Shard already existing locally")
+			return
+		}
+	}
+
 	// Shard
 	shard := newShardFromId(block, shardId)
 
