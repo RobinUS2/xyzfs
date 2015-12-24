@@ -38,19 +38,19 @@ func (this *RestServer) start() {
 			log.Warn("HTTP debug endpoints are ON")
 
 			// File locator
-			router.GET("/debug/file-locator/shards", GetDebugFileLocatorShards)
-			router.GET("/debug/file-locator/shard-locations", GetDebugFileLocatorShardLocations)
+			router.GET("/v1/debug/file-locator/shards", GetDebugFileLocatorShards)
+			router.GET("/v1/debug/file-locator/shard-locations", GetDebugFileLocatorShardLocations)
 
 			// Gossip
-			router.GET("/debug/gossip/nodes", GetDebugGossipNodes)
+			router.GET("/v1/debug/gossip/nodes", GetDebugGossipNodes)
 
 			// Block
-			router.POST("/debug/block/allocate", PostDebugBlockAllocate)
-			router.PUT("/debug/block/persist", PutDebugBlockPersist)
+			router.POST("/v1/debug/block/allocate", PostDebugBlockAllocate)
+			router.PUT("/v1/debug/block/persist", PutDebugBlockPersist)
 		}
 
 		// File
-		router.POST("/file", PostFile)
+		router.POST("/v1/file", PostFile)
 
 		// Start server
 		log.Infof("Starting REST HTTP server on port TCP/%d", conf.HttpPort)
