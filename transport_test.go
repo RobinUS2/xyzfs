@@ -119,6 +119,9 @@ func TestTransportPool(t *testing.T) {
 	// Return connection
 	tr._returnConnection("127.0.0.1", conn3)
 
+	// Close
+	tr.close()
+
 }
 
 func TestTransportReadWrite(t *testing.T) {
@@ -152,6 +155,9 @@ func TestTransportReadWrite(t *testing.T) {
 	if sendStr != string(resB) {
 		log.Error("Response bytes mismatch send")
 	}
+
+	// Close
+	tr.close()
 }
 
 func TestTransportOnConnect(t *testing.T) {
@@ -181,4 +187,6 @@ func TestTransportOnConnect(t *testing.T) {
 	if resNode != string("127.0.0.1") {
 		log.Error("On-connect node error mismatch")
 	}
+	// Close
+	tr.close()
 }

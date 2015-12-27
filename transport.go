@@ -11,7 +11,7 @@ import (
 	"net"
 	"strings"
 	"sync"
-	// "time"
+	"time"
 )
 
 var TRANSPORT_MAGIC_FOOTER []byte = []byte{'\r', '\n', 'X', 'Y', 'Z'}
@@ -26,6 +26,7 @@ type NetworkTransport struct {
 	protocol         string
 	port             int
 	serviceName      string
+	listener         *net.Listener
 	listenAddr       string // Local listen address
 	receiveBufferLen int
 	// Handlers
@@ -41,6 +42,43 @@ type NetworkTransport struct {
 	// Compression
 	_compress   func([]byte) ([]byte, error)
 	_decompress func([]byte) ([]byte, error)
+}
+
+// Close
+func (this *NetworkTransport) close() {
+	// Only applies to TCP
+	if this.protocol != "tcp" {
+		return
+	}
+
+	// Close transport
+	log.Infof("Closing transport %s", this.serviceName)
+	log.Infof("Closing transport socket %s", this.serviceName)
+	this.mux.Lock()
+	if this.listener != nil {
+		ln := (*this.listener)
+		if ln != nil {
+			ln.Close()
+		}
+		this.listener = nil
+		this.listenAddr = ""
+	}
+	this.mux.Unlock()
+	log.Infof("Closed transport socket %s", this.serviceName)
+
+	// Close pools
+	log.Infof("Closing transport pools %s", this.serviceName)
+	this.connectionsMux.Lock()
+	for _, tcp := range this.connections {
+		tcp.Close()
+	}
+	this.connectionsMux.Unlock()
+	log.Infof("Closed transport pools %s", this.serviceName)
+
+	log.Infof("Closed transport %s", this.serviceName)
+
+	// Wait a bit, so the OS can cleanup resources
+	time.Sleep(50 * time.Millisecond)
 }
 
 // Listen
@@ -60,17 +98,27 @@ func (this *NetworkTransport) listen() {
 
 // Listen TCP
 func (this *NetworkTransport) _listenTcp() {
+	// Start TCP
 	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
 	if err != nil {
 		panicErr(err)
 	}
+
+	// Store listen details
 	this.mux.Lock()
+	this.listener = &ln
 	this.listenAddr = ln.Addr().String()
 	this.mux.Unlock()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			// handle error
+			if this.listener == nil {
+				log.Infof("Exiting %s listen loop", this.serviceName)
+				break
+			}
+			log.Infof("Listen %s error: %s", this.serviceName, err)
+			continue
 		}
 		go this.handleConnection(conn)
 	}
@@ -82,24 +130,32 @@ func (this *NetworkTransport) _listenUdp() {
 	serverAddr, err := net.ResolveUDPAddr(this.protocol, fmt.Sprintf(":%d", this.port))
 	panicErr(err)
 
+	// Start UDP
 	ln, err := net.ListenUDP(this.protocol, serverAddr)
-	this.mux.Lock()
-	this.listenAddr = ln.LocalAddr().String()
-	this.mux.Unlock()
 	if err != nil {
 		panicErr(err)
 	}
+
+	// Store listen details
+	this.mux.Lock()
+	this.listener = nil
+	this.listenAddr = ln.LocalAddr().String()
+	this.mux.Unlock()
+
+	// Listen for incoming
 	for {
 		tbuf := make([]byte, this.receiveBufferLen)
 		n, addr, err := ln.ReadFromUDP(tbuf)
 		log.Debugf("Received ", string(tbuf[0:n]), " from ", addr)
 
+		// Error?
 		if err != nil {
-			log.Errorf("UDP receive error: %s", err)
-		} else {
-			// Read message
-			this._onMessage(newTransportConnectionMeta(ln.RemoteAddr().String()), tbuf[0:n])
+			log.Errorf("UDP %s receive error: %s", this.serviceName, err)
+			continue
 		}
+
+		// Read message
+		this._onMessage(newTransportConnectionMeta(ln.RemoteAddr().String()), tbuf[0:n])
 	}
 }
 
