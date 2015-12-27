@@ -9,7 +9,7 @@ import (
 
 func TestMagicFooterValidation(t *testing.T) {
 	// Transport
-	tr := newNetworkTransport("tcp", "binary", 123456, 1024*1024, true)
+	tr := newNetworkTransport("tcp", "binary", 123456, 1024*1024, 2, true)
 
 	// Vars
 	var br *bufio.Reader
@@ -60,7 +60,7 @@ func TestMagicFooterValidation(t *testing.T) {
 
 func TestTransportPool(t *testing.T) {
 	// Transport
-	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, true)
+	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, 2, true)
 
 	// On-connect
 	tr._onConnect = func(cmeta *TransportConnectionMeta, node string) {
@@ -126,7 +126,7 @@ func TestTransportPool(t *testing.T) {
 
 func TestTransportReadWrite(t *testing.T) {
 	// Transport
-	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, true)
+	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, 2, true)
 
 	// On-connect
 	tr._onConnect = func(cmeta *TransportConnectionMeta, node string) {
@@ -162,7 +162,7 @@ func TestTransportReadWrite(t *testing.T) {
 
 func TestTransportOnConnect(t *testing.T) {
 	// Transport
-	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, true)
+	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, 2, true)
 
 	// On-connect
 	var res chan string = make(chan string, 1)

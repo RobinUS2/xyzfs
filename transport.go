@@ -255,6 +255,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		receivedCrc := crc32.Checksum(db, crcTable)
 		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
 		conn.Write(ackBuf.Bytes())
+		conn.Write(TRANSPORT_MAGIC_FOOTER)
 		if this.traceLog {
 			log.Infof("Sending ack %d to %s for %s", receivedCrc, conn.RemoteAddr().String(), this.serviceName)
 		}
@@ -373,9 +374,45 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		if this.traceLog {
 			log.Infof("Waiting for ack %s", this.serviceName)
 		}
-		ackBytes := make([]byte, 4)
-		conn.Read(ackBytes)
-		ackBuf := bytes.NewReader(ackBytes)
+
+		// Reader
+		connbuf := bufio.NewReader(conn)
+
+		// Keep reading until we have all
+		tbuf := new(bytes.Buffer)
+		for {
+			// Reader until first \r
+			by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
+			if this.traceLog {
+				log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
+			}
+			// Was there an error in reading ?
+			if err != nil {
+				if err != io.EOF {
+					log.Printf("Read error: %s", err)
+				}
+				break
+			}
+
+			// Write to buffer
+			tbuf.Write(by)
+			if this.traceLog {
+				log.Infof("tbuf now %d", len(tbuf.Bytes()))
+			}
+
+			// Is this the end?
+			if this._validateMagicFooter(connbuf, 1, 4) == false {
+				if this.traceLog {
+					log.Infof("Magic footer not yet found")
+				}
+				// Not yet, continue reading
+				continue
+			}
+
+			// Done reading
+			break
+		}
+		ackBuf := bytes.NewReader(tbuf.Bytes())
 		var receivedCrc uint32
 		ackReadErr := binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
 		panicErr(ackReadErr)
