@@ -111,6 +111,20 @@ func newGossip() *Gossip {
 				}
 			}
 			g.nodesMux.RUnlock()
+
+			// Collect node transport statistics
+			for k, tcp := range g.transport.connections {
+				s1 := tcp.Profiler.Stats()
+				s2 := &PerformanceProfilerStats{}
+				if binaryTransport.transport.connections[k] != nil {
+					s2 = binaryTransport.transport.connections[k].Profiler.Stats()
+				}
+				s := &PerformanceProfilerStats{
+					AvgSuccessMs: (s1.AvgSuccessMs + s2.AvgSuccessMs) / 2,
+					AvgErrorMs:   (s1.AvgErrorMs + s2.AvgErrorMs) / 2,
+				}
+				g.GetNodeState(tcp.Node).SetStats(s)
+			}
 		}
 	}()
 

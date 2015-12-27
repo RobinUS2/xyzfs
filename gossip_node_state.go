@@ -11,6 +11,7 @@ type GossipNodeState struct {
 	// Pings between nodes
 	LastHelloSent     uint32
 	LastHelloReceived uint32
+	Stats             *PerformanceProfilerStats
 }
 
 func (this *GossipNodeState) UpdateLastHelloSent() {
@@ -41,6 +42,18 @@ func (this *GossipNodeState) SetRuntimeId(id string) {
 	this.mux.Lock()
 	this.RuntimeId = id
 	this.mux.Unlock()
+}
+
+func (this *GossipNodeState) SetStats(s *PerformanceProfilerStats) {
+	this.mux.Lock()
+	this.Stats = s
+	this.mux.Unlock()
+}
+
+func (this *GossipNodeState) GetStats() *PerformanceProfilerStats {
+	this.mux.RLock()
+	defer this.mux.RUnlock()
+	return this.Stats
 }
 
 func (this *GossipNodeState) GetRuntimeId() string {

@@ -44,8 +44,6 @@ func (this *PerformanceProfiler) _addMeasurement(m *PerformanceProfilerMeasureme
 		this.RecentResultsPointer = 0
 	}
 	this.mux.Unlock()
-	s := this.Stats()
-	log.Infof("Performance profiler error %t, took %fms (avg success: %fms - avg error: %fms)", m.HasError, m.Milliseconds(), s.AvgSuccessMs, s.AvgErrorMs)
 }
 
 // Stats
