@@ -1,5 +1,11 @@
 language: go
+
 go:
   - 1.5
   - tip
-build: ./test.sh
+
+before_script:
+  - "sudo mkdir /xyzfs"
+  - "sudo chmod 777 /xyzfs"
+
+script: ./test.sh
