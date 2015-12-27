@@ -58,7 +58,7 @@ func TestMagicFooterValidation(t *testing.T) {
 	}
 }
 
-func TestTransportConnectionPool(t *testing.T) {
+func TestTransportPool(t *testing.T) {
 	// Transport
 	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, true)
 
@@ -154,4 +154,31 @@ func TestTransportReadWrite(t *testing.T) {
 	}
 }
 
-// @todo test On-connect
+func TestTransportOnConnect(t *testing.T) {
+	// Transport
+	tr := newNetworkTransport("tcp", "binary", 12345, 1024*1024, true)
+
+	// On-connect
+	var res chan string = make(chan string, 1)
+	tr._onConnect = func(cmeta *TransportConnectionMeta, node string) {
+		res <- node
+	}
+
+	// On-message
+	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+		// Stub
+	}
+
+	// Start listening
+	tr.start()
+
+	// Open connection
+	tr._prepareConnection("127.0.0.1")
+
+	// Wait for response
+	log.Info("Waiting for on-connect via transport")
+	resNode := <-res
+	if resNode != string("127.0.0.1") {
+		log.Error("On-connect node error mismatch")
+	}
+}
