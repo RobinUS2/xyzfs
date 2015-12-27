@@ -56,15 +56,11 @@ Networking
 
 Rough work outlines
 =============
-- filename ring translation (murmur3)
 - implement replication (index over tcp to primary replicas, index over udp to all nodes, contents over tcp to replicaes)
-- implement REST POST
 - implement REST PUT
-- read file from disk (open shard, seek to position, etcd)
 - implement REST GET
 - implement thombstones to support deletes
 - implement REST DELETE
-- implement remote shards (indices, no metadata, no contents)
 - recover lost shards from parity paritions
 - compression (disk, transport, in-memory)
 - temporary shards (not persisted to disk, very fast writes/reads)
