@@ -1,4 +1,4 @@
-# xyzFS
+# xyzFS ![Build status](https://api.travis-ci.org/RobinUS2/xyzfs.svg)
 Distributed file system. Meant for educational & training purposes.
 
 Building
