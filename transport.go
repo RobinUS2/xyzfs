@@ -264,12 +264,19 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 				bytesRead, dataReadError = readFromConnection(&conn, dataBuffer[totalDataBytesRead:contentLength])
 				totalDataBytesRead += uint32(bytesRead)
 			}
+			if dataReadError != nil {
+				if dataReadError == io.EOF {
+					// Keep reading
+					continue
+				}
+				panicErr(dataReadError)
+			}
 
 			// Decompress
 			db, de := this._decompress(dataBuffer)
 			if de != nil {
 				log.Errorf("Decompress error: %s", de)
-				panic("Failed to decompress")
+				panic(fmt.Sprintf("Failed to decompress %v", dataBuffer))
 			}
 
 			// Read message
@@ -293,12 +300,13 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			// the client can become async to do something like "go transport._senc()"
 			// the receiver can become async by implementing the read message with a go routine
 			receivedCrc := crc32.Checksum(db, crcTable)
-			binary.Write(ackBuf, binary.BigEndian, receivedCrc)
+			binary.Write(ackBuf, binary.BigEndian, uint32(receivedCrc))
 
 			// Response bytes
 			ackBuf.Write(responseBytes)
 
 			// Write response bytes
+			// log.Infof("Ack bytes %v", ackBuf.Bytes())
 			conn.Write(ackBuf.Bytes())
 			// conn.Write(TRANSPORT_MAGIC_FOOTER)
 			if this.traceLog {
@@ -513,6 +521,7 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		var contentLength uint32 = 0
 		var totalDataBytesRead uint32 = 0
 
+	inner:
 		for {
 			// Read content length
 			if contentLength == 0 {
@@ -539,7 +548,7 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 					bytesRead, dataReadError = readFromConnection(&conn, dataBuffer[totalDataBytesRead:contentLength])
 					totalDataBytesRead += uint32(bytesRead)
 				}
-				break
+				break inner
 			}
 		}
 		ackBuf := bytes.NewReader(dataBuffer)
@@ -556,18 +565,8 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 			continue
 		}
 
-		// Content length?
-		var receivedContentLen uint32
-		readErr = binary.Read(ackBuf, binary.BigEndian, &receivedContentLen)
-		if readErr != nil {
-			log.Warnf("Unable to read received content length: %s", readErr)
-
-			// Discard and retry
-			this._discardConnection(node, tc)
-			continue
-		}
-
 		// Content
+		var receivedContentLen uint32 = contentLength - 4
 		if receivedContentLen > 0 {
 			receivedContentBytes := make([]byte, receivedContentLen)
 			_, readErr = ackBuf.Read(receivedContentBytes)
@@ -595,7 +594,7 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		}
 
 		// Return connection
-		this._returnConnection(node, tc)
+		this._discardConnection(node, tc)
 
 		// OK :)
 		return responseBytes, nil
