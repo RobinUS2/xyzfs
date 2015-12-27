@@ -42,6 +42,8 @@ type NetworkTransport struct {
 	// Compression
 	_compress   func([]byte) ([]byte, error)
 	_decompress func([]byte) ([]byte, error)
+	// Performance profiler
+	profiler *PerformanceProfiler
 }
 
 // Close

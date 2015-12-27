@@ -10,6 +10,7 @@ type TransportConnectionPool struct {
 	Chan      chan *TransportConnection
 	PoolSize  int
 	Closed    bool
+	Profiler  *PerformanceProfiler
 }
 
 // Get
@@ -21,16 +22,24 @@ func (this *TransportConnectionPool) GetConnection() *TransportConnection {
 		timeout <- true
 	}()
 
+	// Fetch from chan, or create on timeout
+	var tc *TransportConnection
 	select {
-	case tc := <-this.Chan:
+	case tc = <-this.Chan:
 		if this.Transport.traceLog {
 			log.Infof("Pool %s hand out %s", this.Transport.serviceName, tc.id)
 		}
-		return tc
+		break
 	case <-timeout:
 		log.Warnf("Pool %s hand out timeout warning", this.Transport.serviceName)
-		return this._newConnection()
+		tc = this._newConnection()
+		break
 	}
+
+	// Attach profiler
+	tc.AttachProfiler(this.Profiler.Start())
+
+	return tc
 }
 
 // Return
@@ -41,6 +50,9 @@ func (this *TransportConnectionPool) ReturnConnection(tc *TransportConnection) {
 		tc.Close()
 		return
 	}
+
+	// Finalize profiler
+	tc.profilerMeasurement.Success()
 
 	// Into channel
 	select {
@@ -59,6 +71,9 @@ func (this *TransportConnectionPool) ReturnConnection(tc *TransportConnection) {
 func (this *TransportConnectionPool) DiscardConnection(tc *TransportConnection) {
 	// Close
 	tc.Close()
+
+	// Finalize profiler
+	tc.profilerMeasurement.Error()
 
 	// Log discard
 	log.Infof("Pool %s received discarded %s", this.Transport.serviceName, tc.id)
@@ -118,6 +133,7 @@ func newTransportConnectionPool(t *NetworkTransport, node string, n int) *Transp
 		Chan:      make(chan *TransportConnection, n),
 		PoolSize:  n,
 		Closed:    false,
+		Profiler:  newPerformanceProfiler(),
 	}
 	o._prepare()
 	return o

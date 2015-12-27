@@ -7,10 +7,11 @@ import (
 )
 
 type TransportConnection struct {
-	node string
-	pool *TransportConnectionPool
-	conn *net.Conn
-	id   string
+	node                string
+	pool                *TransportConnectionPool
+	conn                *net.Conn
+	id                  string
+	profilerMeasurement *PerformanceProfilerMeasurement
 }
 
 func (this *TransportConnection) Conn() net.Conn {
@@ -24,6 +25,10 @@ func (this *TransportConnection) Conn() net.Conn {
 	}
 	// Yes connection
 	return *this.conn
+}
+
+func (this *TransportConnection) AttachProfiler(p *PerformanceProfilerMeasurement) {
+	this.profilerMeasurement = p
 }
 
 func (this *TransportConnection) Close() {
