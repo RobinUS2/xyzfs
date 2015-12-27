@@ -2,7 +2,7 @@ package main
 
 // Send hello message to node
 func (this *Gossip) _sendHello(node string) error {
-	log.Infof("Gossip to %s", node)
+	// log.Infof("Gossip to %s", node)
 
 	// Create message with the runtime ID
 	msg := newGossipMessage(HelloGossipMessageType, []byte(runtime.Id))
@@ -22,7 +22,7 @@ func (this *Gossip) _sendHello(node string) error {
 
 // Receive hello
 func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMessage) {
-	log.Infof("Gossip from %s", cmeta.GetNode())
+	// log.Infof("Gossip from %s", cmeta.GetNode())
 
 	// Hello runtime ID
 	remoteRuntimeId := string(msg.Data)
