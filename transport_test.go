@@ -68,8 +68,9 @@ func TestTransportPool(t *testing.T) {
 	}
 
 	// On-message
-	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) []byte {
 		// Stub
+		return nil
 	}
 
 	// Start listening
@@ -135,8 +136,9 @@ func TestTransportReadWrite(t *testing.T) {
 
 	// On-message
 	var res chan []byte = make(chan []byte, 1)
-	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) []byte {
 		res <- b
+		return nil
 	}
 
 	// Start listening
@@ -144,9 +146,12 @@ func TestTransportReadWrite(t *testing.T) {
 
 	// Get connection
 	sendStr := "Hello\r\nTransport"
-	tErr := tr._send("127.0.0.1", []byte(sendStr))
+	tResp, tErr := tr._send("127.0.0.1", []byte(sendStr))
 	if tErr != nil {
 		t.Errorf("Transport error: %s", tErr)
+	}
+	if tResp != nil && len(tResp) > 1 {
+		t.Error("Transport response should be empty")
 	}
 
 	// Wait for response
@@ -171,8 +176,9 @@ func TestTransportOnConnect(t *testing.T) {
 	}
 
 	// On-message
-	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+	tr._onMessage = func(cmeta *TransportConnectionMeta, b []byte) []byte {
 		// Stub
+		return nil
 	}
 
 	// Start listening
