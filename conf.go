@@ -10,26 +10,27 @@ var conf *Conf
 var confSeedFlag string
 
 type Conf struct {
-	HttpPort                  int
-	Datastore                 *DatastoreConf
-	Seeds                     []string
-	DataShardsPerBlock        int
-	ParityShardsPerBlock      int
-	ShardSizeInBytes          int
-	UnixFolderPermissions     os.FileMode
-	UnixFilePermissions       os.FileMode
-	MetaBasePath              string
-	VolumeBasePath            string
-	GossipPort                int
-	GossipHelloInterval       uint32
-	GossipTransportReadBuffer int
-	GossipTransportNumStreams int
-	BinaryPort                int
-	BinaryUdpPort             int
-	BinaryTransportReadBuffer int
-	BinaryTransportNumStreams int
-	MaxFileSize               int
-	HttpDebug                 bool
+	HttpPort                   int
+	Datastore                  *DatastoreConf
+	Seeds                      []string
+	DataShardsPerBlock         int
+	ParityShardsPerBlock       int
+	ShardSizeInBytes           int
+	UnixFolderPermissions      os.FileMode
+	UnixFilePermissions        os.FileMode
+	MetaBasePath               string
+	VolumeBasePath             string
+	GossipPort                 int
+	GossipHelloInterval        uint32
+	GossipTransportReadBuffer  int
+	GossipTransportNumStreams  int
+	BinaryPort                 int
+	BinaryUdpPort              int
+	BinaryTransportReadBuffer  int
+	BinaryTransportWriteBuffer int
+	BinaryTransportNumStreams  int
+	MaxFileSize                int
+	HttpDebug                  bool
 }
 
 type DatastoreConf struct {
@@ -63,8 +64,9 @@ func newConf() *Conf {
 		GossipTransportNumStreams: 2,
 
 		// Binary
-		BinaryTransportReadBuffer: 32 * 1024 * 1024,
-		BinaryTransportNumStreams: 16,
+		BinaryTransportReadBuffer:  32 * 1024 * 1024,
+		BinaryTransportWriteBuffer: 32 * 1024,
+		BinaryTransportNumStreams:  16,
 
 		// Files
 		MaxFileSize: 1024 * 1024 * 1024,

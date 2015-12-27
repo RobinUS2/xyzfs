@@ -146,6 +146,7 @@ func (this *BinaryTransportFileReceiver) _readContent(chunkNumber uint32, buf *b
 		panic("Data bytes read mismatch")
 	}
 	this.mux.Lock()
+	// log.Infof("receive chunk %d %v", chunkNumber, contentBytes)
 	this.receivedDataChunks[chunkNumber] = contentBytes
 	this.mux.Unlock()
 }

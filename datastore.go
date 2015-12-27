@@ -55,6 +55,7 @@ func (this *Datastore) AddFile(fullName string, data []byte) (bool, error) {
 
 	// Send data to node
 	for _, msg := range msgs {
+		// log.Infof("send chunk %d %v", chunkNumber, msg.Data[12:])
 		binaryTransport._sendFileChunk(node, msg)
 	}
 
@@ -141,7 +142,7 @@ func newDatastore() *Datastore {
 	d := &Datastore{
 		fileLocator:  newFileLocator(),
 		nodeRouter:   newNodeRouter(),
-		fileSplitter: newBinaryTransportFileSplitter(uint32(conf.BinaryTransportReadBuffer)),
+		fileSplitter: newBinaryTransportFileSplitter(uint32(conf.BinaryTransportWriteBuffer)),
 	}
 	d.prepare()
 	return d

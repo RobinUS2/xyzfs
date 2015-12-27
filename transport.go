@@ -165,7 +165,10 @@ func (this *NetworkTransport) _listenUdp() {
 func (this *NetworkTransport) _validateMagicFooter(connbuf *bufio.Reader, magicStart int, magicEnd int) bool {
 	for i := magicStart; i <= magicEnd; i++ {
 		// Read byte
-		byTerminator, _ := connbuf.ReadByte()
+		byTerminator, byTerminatorReadErr := connbuf.ReadByte()
+		if byTerminatorReadErr != nil {
+			log.Warnf("Error while reading for validate magic footer: %s", byTerminatorReadErr)
+		}
 
 		// Is this the correct footer byte?
 		if byTerminator != TRANSPORT_MAGIC_FOOTER[i] {
@@ -214,18 +217,21 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		if this.traceLog {
 			log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
 		}
+
+		// Write to buffer
+		if len(by) > 0 {
+			tbuf.Write(by)
+			if this.traceLog {
+				log.Infof("tbuf now %d", len(tbuf.Bytes()))
+			}
+		}
+
 		// Was there an error in reading ?
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("Read error: %s", err)
 			}
 			break
-		}
-
-		// Write to buffer
-		tbuf.Write(by)
-		if this.traceLog {
-			log.Infof("tbuf now %d", len(tbuf.Bytes()))
 		}
 
 		// Is this the end?
@@ -343,7 +349,12 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 	// Retries
 	var responseBytes []byte = nil
 	var errb error
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 1; i++ {
+		// Retry?
+		if i != 0 {
+			log.Warnf("Retrying _send of %s to %s", this.serviceName, node)
+		}
+
 		// Get connection
 		tc := this._getConnection(node)
 
@@ -370,6 +381,8 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		// OK?
 		if errb != nil || errf != nil {
 			// Uups..
+			log.Errorf("Failed to write: %s", errb)
+			log.Errorf("Failed to write: %s", errf)
 			this._discardConnection(node, tc)
 
 			// @todo sleep with jitter
@@ -434,6 +447,9 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		readErr = binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
 		if readErr != nil {
 			log.Warnf("Unable to read received CRC: %s", readErr)
+
+			// Discard and retry
+			this._discardConnection(node, tc)
 			continue
 		}
 
@@ -442,6 +458,9 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		readErr = binary.Read(ackBuf, binary.BigEndian, &receivedContentLen)
 		if readErr != nil {
 			log.Warnf("Unable to read received content length: %s", readErr)
+
+			// Discard and retry
+			this._discardConnection(node, tc)
 			continue
 		}
 
@@ -451,6 +470,9 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 			_, readErr = ackBuf.Read(receivedContentBytes)
 			if readErr != nil {
 				log.Warnf("Unable to read received content: %s", readErr)
+
+				// Discard and retry
+				this._discardConnection(node, tc)
 				continue
 			}
 			responseBytes = receivedContentBytes

@@ -55,6 +55,7 @@ func (this *TransportConnection) Connect() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
+		log.Infof("Connected to %s", this.node)
 
 		// Yay!
 		this.conn = &conn
