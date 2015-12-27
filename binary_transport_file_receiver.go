@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"hash/crc32"
 	"sync"
 	"time"
@@ -167,7 +168,7 @@ func (this *BinaryTransportFileReceiver) Bytes() ([]byte, error) {
 	// Validate final CRC with metadata
 	crc := crc32.Checksum(b, crcTable)
 	if crc != this.fileMeta.Checksum {
-		return nil, errors.New("Checksum not valid")
+		return nil, errors.New(fmt.Sprintf("Checksum not valid, expected %d (len %d) found %d (len %d)", this.fileMeta.Checksum, this.fileMeta.Size, crc, len(b)))
 	}
 
 	return b, nil
