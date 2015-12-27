@@ -27,18 +27,18 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 	// Hello runtime ID
 	remoteRuntimeId := string(msg.Data)
 
+	// State
+	state := this.GetNodeState(cmeta.GetNode())
+
+	// Runtime
+	state.SetRuntimeId(remoteRuntimeId)
+
 	// Ignore messages from ourselves
 	if remoteRuntimeId == runtime.Id {
 		runtime.SetNode(cmeta.GetNode())
 		log.Debugf("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
 		return
 	}
-
-	// State
-	state := this.GetNodeState(cmeta.GetNode())
-
-	// Runtime
-	state.SetRuntimeId(remoteRuntimeId)
 
 	// Handshake complete?
 	if state.GetLastHelloReceived() == 0 {
