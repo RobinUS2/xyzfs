@@ -48,6 +48,10 @@ func (this *TransportConnection) Connect() {
 		conn, conE := net.Dial(this.pool.Transport.protocol, fmt.Sprintf("%s:%d", this.pool.Node, this.pool.Transport.port))
 		if conE != nil {
 			log.Errorf("Failed to connect to %s: %s", this.node, conE)
+
+			if conn != nil {
+				conn.Close()
+			}
 			time.Sleep(1 * time.Second)
 			continue
 		}

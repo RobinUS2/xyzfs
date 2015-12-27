@@ -23,9 +23,11 @@ type Conf struct {
 	GossipPort                int
 	GossipHelloInterval       uint32
 	GossipTransportReadBuffer int
+	GossipTransportNumStreams int
 	BinaryPort                int
 	BinaryUdpPort             int
 	BinaryTransportReadBuffer int
+	BinaryTransportNumStreams int
 	MaxFileSize               int
 	HttpDebug                 bool
 }
@@ -58,9 +60,11 @@ func newConf() *Conf {
 		// Gossip
 		GossipHelloInterval:       5,
 		GossipTransportReadBuffer: 8 * 1024,
+		GossipTransportNumStreams: 2,
 
 		// Binary
 		BinaryTransportReadBuffer: 32 * 1024 * 1024,
+		BinaryTransportNumStreams: 16,
 
 		// Files
 		MaxFileSize: 1024 * 1024 * 1024,

@@ -28,8 +28,8 @@ func (this *BinaryTransport) _send(node string, msg *BinaryTransportMessage) err
 // Create new binary transport
 func newBinaryTransport() *BinaryTransport {
 	b := &BinaryTransport{
-		transport:     newNetworkTransport("tcp", "binary", conf.BinaryPort, conf.BinaryTransportReadBuffer, true),
-		udpTransport:  newNetworkTransport("udp", "binary_udp", conf.BinaryUdpPort, conf.BinaryTransportReadBuffer, false),
+		transport:     newNetworkTransport("tcp", "binary", conf.BinaryPort, conf.BinaryTransportReadBuffer, conf.BinaryTransportNumStreams, false),
+		udpTransport:  newNetworkTransport("udp", "binary_udp", conf.BinaryUdpPort, conf.BinaryTransportReadBuffer, conf.BinaryTransportNumStreams, false),
 		fileReceivers: make(map[string]*BinaryTransportFileReceiver),
 	}
 

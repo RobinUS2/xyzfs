@@ -187,6 +187,14 @@ func (this *NetworkTransport) _validateMagicFooter(connbuf *bufio.Reader, magicS
 
 // Handle connection
 func (this *NetworkTransport) handleConnection(conn net.Conn) {
+	// Recover from panics in TCP layer
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered in handleConnection of %s: %s", this.serviceName, r)
+			conn.Close()
+		}
+	}()
+
 	// Read bytes
 	// tbuf := make([]byte, this.receiveBufferLen)
 	tbuf := new(bytes.Buffer)
@@ -261,7 +269,7 @@ func (this *NetworkTransport) _prepareConnection(node string) {
 	// Get channel
 	this.connectionsMux.Lock()
 	if this.connections[node] == nil {
-		this.connections[node] = newTransportConnectionPool(this, node, 16)
+		this.connections[node] = newTransportConnectionPool(this, node, this.connectionPoolSize)
 
 		// Send HELLO message to new nodes
 		if this._onConnect != nil {
@@ -410,9 +418,9 @@ func (this *NetworkTransport) start() {
 }
 
 // New NetworkTransport service
-func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int, traceLog bool) *NetworkTransport {
+func newNetworkTransport(protocol string, serviceName string, port int, receiveBufferLen int, numStreams int, traceLog bool) *NetworkTransport {
 	g := &NetworkTransport{
-		connectionPoolSize: 1,
+		connectionPoolSize: numStreams,
 		protocol:           protocol,
 		port:               port,
 		serviceName:        serviceName,
