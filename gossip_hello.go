@@ -30,7 +30,7 @@ func (this *Gossip) _receiveHello(cmeta *TransportConnectionMeta, msg *GossipMes
 	// Ignore messages from ourselves
 	if remoteRuntimeId == runtime.Id {
 		runtime.SetNode(cmeta.GetNode())
-		log.Infof("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
+		log.Debugf("Ignoring gossip hello from ourselves with runtime ID %s", runtime.Id)
 		return
 	}
 
