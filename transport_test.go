@@ -146,7 +146,7 @@ func TestTransportReadWrite(t *testing.T) {
 	sendStr := "Hello\r\nTransport"
 	tErr := tr._send("127.0.0.1", []byte(sendStr))
 	if tErr != nil {
-		t.Error("Transport error: %s", tErr)
+		t.Errorf("Transport error: %s", tErr)
 	}
 
 	// Wait for response

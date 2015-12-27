@@ -27,11 +27,9 @@ func (this *TransportConnectionPool) GetConnection() *TransportConnection {
 			log.Infof("Pool %s hand out %s", this.Transport.serviceName, tc.id)
 		}
 		return tc
-		break
 	case <-timeout:
 		log.Warnf("Pool %s hand out timeout warning", this.Transport.serviceName)
 		return this._newConnection()
-		break
 	}
 	return nil
 }
