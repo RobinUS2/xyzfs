@@ -31,7 +31,6 @@ func (this *TransportConnectionPool) GetConnection() *TransportConnection {
 		log.Warnf("Pool %s hand out timeout warning", this.Transport.serviceName)
 		return this._newConnection()
 	}
-	return nil
 }
 
 // Return
