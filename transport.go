@@ -188,19 +188,44 @@ func (this *NetworkTransport) _validateMagicFooter(connbuf *bufio.Reader, magicS
 	panic("Magic bytes invalid")
 }
 
+// Handles reading from a given connection.
+func readFromConnection(reader *net.Conn, buffer []byte) (int, error) {
+	// This fills the buffer
+	bytesLen, err := (*reader).Read(buffer)
+	// Output the content of the bytes to the queue
+	if bytesLen == 0 {
+		if err != nil && err == io.EOF {
+			// "End of individual transmission"
+			// We're just done reading from that conn
+			return bytesLen, err
+		}
+	}
+
+	if err != nil {
+		//"Underlying network failure?"
+		// Not sure what this error would be, but it could exist and i've seen it handled
+		// as a general case in other networking code. Following in the footsteps of (greatness|madness)
+		return bytesLen, err
+	}
+	// Read some bytes, return the length
+	return bytesLen, nil
+}
+
 // Handle connection
 func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	// Recover from panics in TCP layer
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("Recovered in handleConnection of %s: %s", this.serviceName, r)
+			if r != io.EOF {
+				log.Errorf("Recovered unexpected error in handleConnection of %s: %s", this.serviceName, r)
+			}
 			conn.Close()
 		}
 	}()
 
 	// Read bytes
 	// tbuf := make([]byte, this.receiveBufferLen)
-	tbuf := new(bytes.Buffer)
+	// tbuf := new(bytes.Buffer)
 
 	// Connection nil?
 	if conn == nil {
@@ -209,78 +234,152 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 	}
 
 	// Reader
-	connbuf := bufio.NewReader(conn)
+	var dataBuffer []byte = nil
+	var contentLength uint32 = 0
+	var totalDataBytesRead uint32 = 0
 
 	for {
-		// Reader until first \r
-		by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
-		if this.traceLog {
-			log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
-		}
+		// Read content length
+		if contentLength == 0 {
+			// Read content length
+			lenBuf := make([]byte, 4)
+			lenBufRead, lenReadErr := conn.Read(lenBuf)
+			panicErr(lenReadErr)
+			if lenBufRead != len(lenBuf) {
+				panic("Not enough bytes read for content length")
+			}
+			lenReader := bytes.NewReader(lenBuf)
+			lenErr := binary.Read(lenReader, binary.BigEndian, &contentLength)
+			panicErr(lenErr)
+			log.Infof("Content length %d", contentLength)
 
-		// Write to buffer
-		if len(by) > 0 {
-			tbuf.Write(by)
+			// Create content buffer
+			dataBuffer = make([]byte, contentLength)
+		} else {
+			// Read content
+			var dataReadError error
+			var bytesRead = 0
+			for totalDataBytesRead < contentLength && dataReadError == nil {
+				// While we haven't read enough yet, pass in the slice that represents where we are in the buffer
+				bytesRead, dataReadError = readFromConnection(&conn, dataBuffer[totalDataBytesRead:contentLength])
+				totalDataBytesRead += uint32(bytesRead)
+			}
+
+			// Decompress
+			db, de := this._decompress(dataBuffer)
+			if de != nil {
+				log.Errorf("Decompress error: %s", de)
+				panic("Failed to decompress")
+			}
+
+			// Read message
+			responseBytes := this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
+
+			// Resonse content
+			var responseLen uint32 = 4
+			if responseBytes != nil {
+				// With content
+				responseLen += uint32(len(responseBytes))
+			}
+
+			// Response (length + crc32 (4 bytes) + response)
+			ackBuf := new(bytes.Buffer)
+
+			// Length first
+			binary.Write(ackBuf, binary.BigEndian, responseLen)
+
+			// Ack with checksum of decompressed received bytes
+			// this is after the message processing, to make it synchronous
+			// the client can become async to do something like "go transport._senc()"
+			// the receiver can become async by implementing the read message with a go routine
+			receivedCrc := crc32.Checksum(db, crcTable)
+			binary.Write(ackBuf, binary.BigEndian, receivedCrc)
+
+			// Response bytes
+			ackBuf.Write(responseBytes)
+
+			// Write response bytes
+			conn.Write(ackBuf.Bytes())
+			// conn.Write(TRANSPORT_MAGIC_FOOTER)
 			if this.traceLog {
-				log.Infof("tbuf now %d", len(tbuf.Bytes()))
+				log.Infof("Sending ack %d to %s for %s", receivedCrc, conn.RemoteAddr().String(), this.serviceName)
 			}
+
+			// Reset
+			contentLength = 0
+			dataBuffer = nil
+
 		}
 
-		// Was there an error in reading ?
-		if err != nil {
-			if err != io.EOF {
-				log.Printf("Read error: %s", err)
-			}
-			break
-		}
+		// // Reader until first \r
+		// by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
+		// if this.traceLog {
+		// 	log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
+		// }
 
-		// Is this the end?
-		if this._validateMagicFooter(connbuf, 1, 4) == false {
-			if this.traceLog {
-				log.Infof("Magic footer not yet found")
-			}
-			// Not yet, continue reading
-			continue
-		}
+		// // Write to buffer
+		// if len(by) > 0 {
+		// 	tbuf.Write(by)
+		// 	if this.traceLog {
+		// 		log.Infof("tbuf now %d", len(tbuf.Bytes()))
+		// 	}
+		// }
+
+		// // Was there an error in reading ?
+		// if err != nil {
+		// 	if err != io.EOF {
+		// 		log.Printf("Read error: %s", err)
+		// 	}
+		// 	break
+		// }
+
+		// // Is this the end?
+		// if this._validateMagicFooter(connbuf, 1, 4) == false {
+		// 	if this.traceLog {
+		// 		log.Infof("Magic footer not yet found")
+		// 	}
+		// 	// Not yet, continue reading
+		// 	continue
+		// }
 
 		// Decompress
-		db, de := this._decompress(tbuf.Bytes())
-		if de != nil {
-			log.Errorf("Decompress error: %s", de)
-			panic("Failed to decompress")
-		}
+		// db, de := this._decompress(tbuf.Bytes())
+		// if de != nil {
+		// 	log.Errorf("Decompress error: %s", de)
+		// 	panic("Failed to decompress")
+		// }
 
-		// Read message
-		responseBytes := this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
+		// // Read message
+		// responseBytes := this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
 
-		// Ack with checksum of decompressed received bytes
-		// this is after the message processing, to make it synchronous
-		// the client can become async to do something like "go transport._senc()"
-		// the receiver can become async by implementing the read message with a go routine
-		ackBuf := new(bytes.Buffer)
-		receivedCrc := crc32.Checksum(db, crcTable)
-		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
+		// // Ack with checksum of decompressed received bytes
+		// // this is after the message processing, to make it synchronous
+		// // the client can become async to do something like "go transport._senc()"
+		// // the receiver can become async by implementing the read message with a go routine
+		// ackBuf := new(bytes.Buffer)
+		// receivedCrc := crc32.Checksum(db, crcTable)
+		// binary.Write(ackBuf, binary.BigEndian, receivedCrc)
 
-		// Resonse content
-		if responseBytes != nil {
-			// With content
-			responseLen := len(responseBytes)
-			binary.Write(ackBuf, binary.BigEndian, uint32(responseLen))
-			ackBuf.Write(responseBytes)
-		} else {
-			// No content
-			binary.Write(ackBuf, binary.BigEndian, uint32(0))
-		}
+		// // Resonse content
+		// if responseBytes != nil {
+		// 	// With content
+		// 	responseLen := len(responseBytes)
+		// 	binary.Write(ackBuf, binary.BigEndian, uint32(responseLen))
+		// 	ackBuf.Write(responseBytes)
+		// } else {
+		// 	// No content
+		// 	binary.Write(ackBuf, binary.BigEndian, uint32(0))
+		// }
 
-		// Write response bytes
-		conn.Write(ackBuf.Bytes())
-		conn.Write(TRANSPORT_MAGIC_FOOTER)
-		if this.traceLog {
-			log.Infof("Sending ack %d to %s for %s", receivedCrc, conn.RemoteAddr().String(), this.serviceName)
-		}
+		// // Write response bytes
+		// conn.Write(ackBuf.Bytes())
+		// conn.Write(TRANSPORT_MAGIC_FOOTER)
+		// if this.traceLog {
+		// 	log.Infof("Sending ack %d to %s for %s", receivedCrc, conn.RemoteAddr().String(), this.serviceName)
+		// }
 
-		// New buffer
-		tbuf = new(bytes.Buffer)
+		// // New buffer
+		// tbuf = new(bytes.Buffer)
 	}
 }
 
@@ -374,15 +473,21 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 			log.Infof("Sending %d (crc=%d, compressed %d) %s bytes for %s to %s over %s", len(b), sendCrc, len(bc), this.protocol, this.serviceName, node, tc.id)
 		}
 
+		// Write length
+		lenBuf := new(bytes.Buffer)
+		binary.Write(lenBuf, binary.BigEndian, uint32(len(bc)))
+		_, errl := conn.Write(lenBuf.Bytes())
+		panicErr(errl)
+
 		// Write data + footer
 		_, errb = conn.Write(bc)
-		_, errf := conn.Write(TRANSPORT_MAGIC_FOOTER)
+		// _, errf := conn.Write(TRANSPORT_MAGIC_FOOTER)
 
 		// OK?
-		if errb != nil || errf != nil {
+		if errl != nil || errb != nil {
 			// Uups..
+			log.Errorf("Failed to write: %s", errl)
 			log.Errorf("Failed to write: %s", errb)
-			log.Errorf("Failed to write: %s", errf)
 			this._discardConnection(node, tc)
 
 			// @todo sleep with jitter
@@ -402,44 +507,42 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 			log.Infof("Waiting for ack %s", this.serviceName)
 		}
 
-		// Reader
-		connbuf := bufio.NewReader(conn)
-
 		// Keep reading until we have all
-		tbuf := new(bytes.Buffer)
+		// Reader
+		var dataBuffer []byte = nil
+		var contentLength uint32 = 0
+		var totalDataBytesRead uint32 = 0
+
 		for {
-			// Reader until first \r
-			by, err := connbuf.ReadBytes(TRANSPORT_MAGIC_FOOTER[0])
-			if this.traceLog {
-				log.Infof("Received %d %s bytes for %s from %s", len(by), this.protocol, this.serviceName, conn.RemoteAddr().String())
-			}
-			// Was there an error in reading ?
-			if err != nil {
-				if err != io.EOF {
-					log.Printf("Read error: %s", err)
+			// Read content length
+			if contentLength == 0 {
+				// Read content length
+				lenBuf := make([]byte, 4)
+				lenBufRead, lenReadErr := conn.Read(lenBuf)
+				panicErr(lenReadErr)
+				if lenBufRead != len(lenBuf) {
+					panic("Not enough bytes read for content length")
+				}
+				lenReader := bytes.NewReader(lenBuf)
+				lenErr := binary.Read(lenReader, binary.BigEndian, &contentLength)
+				panicErr(lenErr)
+				// log.Infof("Content length %d", contentLength)
+
+				// Create content buffer
+				dataBuffer = make([]byte, contentLength)
+			} else {
+				// Read content
+				var dataReadError error
+				var bytesRead = 0
+				for totalDataBytesRead < contentLength && dataReadError == nil {
+					// While we haven't read enough yet, pass in the slice that represents where we are in the buffer
+					bytesRead, dataReadError = readFromConnection(&conn, dataBuffer[totalDataBytesRead:contentLength])
+					totalDataBytesRead += uint32(bytesRead)
 				}
 				break
 			}
-
-			// Write to buffer
-			tbuf.Write(by)
-			if this.traceLog {
-				log.Infof("tbuf now %d", len(tbuf.Bytes()))
-			}
-
-			// Is this the end?
-			if this._validateMagicFooter(connbuf, 1, 4) == false {
-				if this.traceLog {
-					log.Infof("Magic footer not yet found")
-				}
-				// Not yet, continue reading
-				continue
-			}
-
-			// Done reading
-			break
 		}
-		ackBuf := bytes.NewReader(tbuf.Bytes())
+		ackBuf := bytes.NewReader(dataBuffer)
 		var readErr error
 
 		// Read crc
