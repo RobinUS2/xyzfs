@@ -8,7 +8,7 @@ func (this *Gossip) _sendHello(node string) error {
 	msg := newGossipMessage(HelloGossipMessageType, []byte(runtime.Id))
 
 	// Send
-	err := this._send(node, msg)
+	_, err := this._send(node, msg)
 
 	// Update last sent
 	if err == nil {

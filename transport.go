@@ -30,7 +30,7 @@ type NetworkTransport struct {
 	listenAddr       string // Local listen address
 	receiveBufferLen int
 	// Handlers
-	_onMessage func(*TransportConnectionMeta, []byte)
+	_onMessage func(*TransportConnectionMeta, []byte) []byte
 	_onConnect func(*TransportConnectionMeta, string)
 	// Connections
 	connectionPoolSize int
@@ -245,7 +245,7 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		}
 
 		// Read message
-		this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
+		responseBytes := this._onMessage(newTransportConnectionMeta(conn.RemoteAddr().String()), db)
 
 		// Ack with checksum of decompressed received bytes
 		// this is after the message processing, to make it synchronous
@@ -254,6 +254,19 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 		ackBuf := new(bytes.Buffer)
 		receivedCrc := crc32.Checksum(db, crcTable)
 		binary.Write(ackBuf, binary.BigEndian, receivedCrc)
+
+		// Resonse content
+		if responseBytes != nil {
+			// With content
+			responseLen := len(responseBytes)
+			binary.Write(ackBuf, binary.BigEndian, uint32(responseLen))
+			ackBuf.Write(responseBytes)
+		} else {
+			// No content
+			binary.Write(ackBuf, binary.BigEndian, uint32(0))
+		}
+
+		// Write response bytes
 		conn.Write(ackBuf.Bytes())
 		conn.Write(TRANSPORT_MAGIC_FOOTER)
 		if this.traceLog {
@@ -316,7 +329,7 @@ func (this *NetworkTransport) _discardConnection(node string, tc *TransportConne
 }
 
 // Send message
-func (this *NetworkTransport) _send(node string, b []byte) error {
+func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 
 	// Compress
 	bc, ce := this._compress(b)
@@ -328,6 +341,7 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 	sendCrc := crc32.Checksum(b, crcTable)
 
 	// Retries
+	var responseBytes []byte = nil
 	var errb error
 	for i := 0; i < 2; i++ {
 		// Get connection
@@ -413,9 +427,34 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 			break
 		}
 		ackBuf := bytes.NewReader(tbuf.Bytes())
+		var readErr error
+
+		// Read crc
 		var receivedCrc uint32
-		ackReadErr := binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
-		panicErr(ackReadErr)
+		readErr = binary.Read(ackBuf, binary.BigEndian, &receivedCrc)
+		if readErr != nil {
+			log.Warnf("Unable to read received CRC: %s", readErr)
+			continue
+		}
+
+		// Content length?
+		var receivedContentLen uint32
+		readErr = binary.Read(ackBuf, binary.BigEndian, &receivedContentLen)
+		if readErr != nil {
+			log.Warnf("Unable to read received content length: %s", readErr)
+			continue
+		}
+
+		// Content
+		if receivedContentLen > 0 {
+			receivedContentBytes := make([]byte, receivedContentLen)
+			_, readErr = ackBuf.Read(receivedContentBytes)
+			if readErr != nil {
+				log.Warnf("Unable to read received content: %s", readErr)
+				continue
+			}
+			responseBytes = receivedContentBytes
+		}
 
 		// Validate CRC
 		if receivedCrc != sendCrc {
@@ -434,10 +473,10 @@ func (this *NetworkTransport) _send(node string, b []byte) error {
 		this._returnConnection(node, tc)
 
 		// OK :)
-		return nil
+		return responseBytes, nil
 	}
 
-	return errb
+	return nil, errb
 }
 
 // Start

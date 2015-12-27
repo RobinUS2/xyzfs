@@ -35,7 +35,7 @@ func (this *Gossip) _onHelloHandshakeComplete(node string) {
 }
 
 // Send message
-func (this *Gossip) _send(node string, msg *GossipMessage) error {
+func (this *Gossip) _send(node string, msg *GossipMessage) ([]byte, error) {
 	return this.transport._send(node, msg.Bytes())
 }
 
@@ -76,7 +76,7 @@ func newGossip() *Gossip {
 	}
 
 	// Message
-	g.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) {
+	g.transport._onMessage = func(cmeta *TransportConnectionMeta, b []byte) []byte {
 		msg := &GossipMessage{}
 		msg.FromBytes(b)
 
@@ -96,6 +96,9 @@ func newGossip() *Gossip {
 			log.Warnf("Received unknown message %v", msg)
 			break
 		}
+
+		// No response
+		return nil
 	}
 
 	// Ticker

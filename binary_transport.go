@@ -21,7 +21,7 @@ type BinaryTransport struct {
 }
 
 // Send message
-func (this *BinaryTransport) _send(node string, msg *BinaryTransportMessage) error {
+func (this *BinaryTransport) _send(node string, msg *BinaryTransportMessage) ([]byte, error) {
 	return this.transport._send(node, msg.Bytes())
 }
 
@@ -40,7 +40,7 @@ func newBinaryTransport() *BinaryTransport {
 	}
 
 	// Binary on message
-	b.transport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) {
+	b.transport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) []byte {
 		msg := &BinaryTransportMessage{}
 		msg.FromBytes(by)
 
@@ -67,12 +67,18 @@ func newBinaryTransport() *BinaryTransport {
 			log.Warnf("Received unknown binary TCP message %v", msg)
 			break
 		}
+
+		// No response
+		return nil
 	}
 
 	// Binary on UDP message
-	b.udpTransport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) {
+	b.udpTransport._onMessage = func(cmeta *TransportConnectionMeta, by []byte) []byte {
 		log.Infof("Received binary UDP message %d bytes", len(by))
 		// @todo implement
+
+		// No response
+		return nil
 	}
 
 	// Start listening
