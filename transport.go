@@ -61,12 +61,12 @@ func (this *NetworkTransport) listen() {
 // Listen TCP
 func (this *NetworkTransport) _listenTcp() {
 	ln, err := net.Listen(this.protocol, fmt.Sprintf(":%d", this.port))
-	this.mux.Lock()
-	this.listenAddr = ln.Addr().String()
-	this.mux.Unlock()
 	if err != nil {
 		panicErr(err)
 	}
+	this.mux.Lock()
+	this.listenAddr = ln.Addr().String()
+	this.mux.Unlock()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
