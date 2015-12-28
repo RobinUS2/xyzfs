@@ -51,6 +51,9 @@ func (this *RestServer) start() {
 
 		// File
 		router.POST("/v1/file", PostFile)
+		router.GET("/v1/file", GetFile)
+
+		// Local calls
 		router.GET("/v1/local/file", GetLocalFile) // Local file will attempt to load file from this server
 
 		// Start server
