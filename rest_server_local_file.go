@@ -46,7 +46,10 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 		fileBytes, fileReadErr, _ = shard.ReadFile(file)
 		if fileReadErr == nil {
+			log.Infof("Read local file bytes: %v", fileBytes)
 			break
+		} else {
+			log.Warnf("Failed to read local file %s: %s", file, fileReadErr)
 		}
 	}
 	// Filename
@@ -61,5 +64,6 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Headers
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileBaseName))
 	w.Header().Set("Content-Type", fileContentType)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(fileBytes)))
 	w.Write(fileBytes)
 }

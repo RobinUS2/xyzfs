@@ -91,7 +91,7 @@ outer:
 	for _, shardIdx := range res {
 		locations := datastore.fileLocator.ShardLocationsByIdStr(uuidToString(shardIdx.ShardId))
 		for _, location := range locations {
-			log.Infof("%v", location)
+			// log.Infof("%v", location)
 
 			// Request
 			uri := fmt.Sprintf("http://%s:%d/v1/local/file?filename=%s", location.Node, conf.HttpPort, file)
@@ -99,14 +99,22 @@ outer:
 			if err != nil {
 				log.Warnf("Failed to request %s: %s", uri, err)
 
-				// Attempt nex tlocation
+				// Attempt next location
 				continue
 			}
 			// Read body
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Warnf("Failed to ready body from %s: %s", uri, err)
+
+				// Attempt next location
+				continue
+			}
 
 			// @todo forward headers
+			log.Infof("%s", uri)
+			log.Infof("Body %v", body)
 
 			// Output body
 			w.Write(body)

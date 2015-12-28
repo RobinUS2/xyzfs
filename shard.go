@@ -80,6 +80,24 @@ func (this *Shard) ShardIndex() *ShardIndex {
 	return this.shardIndex
 }
 
+// Get shard meta
+func (this *Shard) ShardMeta() *ShardMeta {
+	// Lazy load?
+	this.Load()
+
+	// Return
+	return this.shardMeta
+}
+
+// Get shard meta
+func (this *Shard) ShardFileMeta() *ShardFileMeta {
+	// Lazy load?
+	this.Load()
+
+	// Return
+	return this.shardFileMeta
+}
+
 // Allocate space, returns true if
 func (this *Shard) AllocateCapacity(n uint32) bool {
 	// Lock
@@ -208,7 +226,7 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	}
 
 	// Get meta
-	meta := this.shardFileMeta.GetByName(filename)
+	meta := this.ShardFileMeta().GetByName(filename)
 
 	// Meta found?
 	if meta == nil {
@@ -216,6 +234,7 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	}
 
 	// Support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
+	log.Infof("Contents on read file %v", this.contents)
 	this.contentsMux.RLock()
 	if this.contents != nil {
 		defer this.contentsMux.RUnlock()
@@ -254,7 +273,7 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	// Validate CRC
 	readCrc := crc32.Checksum(fileBytes, crcTable)
 	if readCrc != meta.Checksum {
-		return nil, errors.New(fmt.Sprintf("CRC checksum mismatch, was %d expected %d", readCrc, meta.Checksum)), false
+		return nil, errors.New(fmt.Sprintf("CRC checksum mismatch, was %d (len %d) expected %d (len %d)", readCrc, len(fileBytes), meta.Checksum, meta.Size)), false
 	}
 
 	return fileBytes, nil, false
@@ -276,6 +295,9 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	this.bufferMode = WriteShardBufferMode
 	this.bufferModeMux.Unlock()
 
+	// Make sure loaded
+	this.Load()
+
 	// We should flush again
 	this.isFlushedMux.Lock()
 	this.isFlushed = false
@@ -289,12 +311,14 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 
 	// Set start offset in shard
 	f.StartOffset = this.contentsOffset
+	log.Infof("Create file offset %d", f.StartOffset)
 
 	// Write contents to buffer
 	this.Contents().Write(b)
 
 	// Update content offset
 	this.contentsOffset += f.Size
+	log.Infof("New contents offset %d", this.contentsOffset)
 
 	// Unlock write
 	this.contentsMux.Unlock()
@@ -317,6 +341,11 @@ func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
 	// Broadcast full index
 	// @todo Remove this, we should only broadcast the changes
 	binaryTransport._broadcastShardIndex(this)
+
+	// Validate file in index
+	if this.TestContainsFile(f.FullName) == false {
+		panic(fmt.Sprintf("Unable to find file %s in index after creation", f.FullName))
+	}
 
 	// Done
 	return f, nil

@@ -44,6 +44,7 @@ func (this *Shard) _toBinaryFormat() []byte {
 	b = nil
 
 	// Shard meta
+	log.Infof("Writing shard meta %v", this.shardMeta)
 	log.Debugf("Writing shard meta %v", this.shardMeta.Bytes())
 	buf.Write(this.shardMeta.Bytes())
 
