@@ -52,6 +52,14 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			log.Warnf("Failed to read local file %s: %s", file, fileReadErr)
 		}
 	}
+
+	// Did we read?
+	if fileBytes == nil {
+		jr.Error("Unable to read file locally")
+		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
+		return
+	}
+
 	// Filename
 	fileNameSplit := strings.Split(file, "/")
 	fileBaseName := fileNameSplit[len(fileNameSplit)-1]

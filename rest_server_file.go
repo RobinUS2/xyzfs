@@ -87,6 +87,7 @@ func GetFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	// Shard IDs
+	var found bool = false
 outer:
 	for _, shardIdx := range res {
 		locations := datastore.fileLocator.ShardLocationsByIdStr(uuidToString(shardIdx.ShardId))
@@ -112,15 +113,28 @@ outer:
 				continue
 			}
 
-			// @todo forward headers
-			// log.Infof("%s", uri)
-			// log.Infof("Body %v", body)
+			// Forward headers
+			for header, values := range r.Header {
+				for _, value := range values {
+					w.Header().Add(header, value)
+				}
+			}
 
 			// Output body
 			w.Write(body)
 
 			// Done
+			found = true
+
+			// Done
 			break outer
 		}
+	}
+
+	// Did we find?
+	if found == false {
+		jr.Error("File not found")
+		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
+		return
 	}
 }
