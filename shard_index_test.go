@@ -28,6 +28,11 @@ func TestShardIndex(t *testing.T) {
 		t.Error("Should be of substantial size")
 	}
 
+	// Test contains after to bytes
+	if idx.Test("test") == false {
+		t.Error("Should still be in here after to bytes")
+	}
+
 	// New empty filter
 	idx2 := newShardIndex(randomUuid())
 	if idx2.Test("test") == true {

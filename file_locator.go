@@ -28,7 +28,15 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 	if datastore != nil {
 		for _, volume := range datastore.Volumes() {
 			for _, shard := range volume.Shards() {
+				// No parity shards
+				if shard.Parity {
+					continue
+				}
+
+				// Keep track of scan count
 				scanCount++
+
+				// Test file
 				if shard.TestContainsFile(fullName) {
 					// Result found
 					res = append(res, shard.shardIndex)
@@ -41,7 +49,6 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 	}
 
 	// Scan registered bloom filters
-	// @todo make concurrent
 	this.remoteShardIndicesMux.RLock()
 	for _, idx := range this.remoteShardIndices {
 		// Is this file in here? Can give false positives

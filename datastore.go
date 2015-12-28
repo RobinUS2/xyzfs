@@ -140,6 +140,9 @@ func (this *Datastore) NewBlock() *Block {
 		log.Errorf("Failed to initialize remote shards: %s", remoteErr)
 	}
 
+	// Persist to disk
+	b.Persist()
+
 	return b
 }
 

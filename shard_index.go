@@ -27,6 +27,7 @@ type ShardIndex struct {
 // Add to index
 func (this *ShardIndex) Add(fullName string) bool {
 	this.mux.Lock()
+	log.Infof("Adding %s to index of shard %s", fullName, uuidToString(this.ShardId))
 	this.bloomFilter.Add([]byte(fullName))
 	this.mux.Unlock()
 	return true
@@ -37,6 +38,7 @@ func (this *ShardIndex) Test(fullName string) bool {
 	this.mux.RLock()
 	res := this.bloomFilter.Test([]byte(fullName))
 	this.mux.RUnlock()
+	log.Infof("Testing %s in index of shard %s, res %t", fullName, uuidToString(this.ShardId), res)
 	return res
 }
 

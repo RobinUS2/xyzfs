@@ -63,6 +63,9 @@ func TestNewFile(t *testing.T) {
 	if shard.shardIndex.Test(fileMeta.FullName) == false {
 		t.Error("Shard index does not contain file 1")
 	}
+	if shard.TestContainsFile(fileMeta.FullName) == false {
+		t.Error("Shard index (via shard) does not contain file 1")
+	}
 	if shard.shardIndex.Test(fileMeta2.FullName) == false {
 		t.Error("Shard index does not contain file 2")
 	}
@@ -100,6 +103,11 @@ func TestNewFile(t *testing.T) {
 
 	// Persist shard to disk
 	shard.Persist()
+
+	// Test contains file after persist
+	if shard.TestContainsFile(fileMeta.FullName) == false {
+		t.Error("Shard index (via shard) does not contain file 1 after persist")
+	}
 
 	// Reset pointers in this shard
 	shard.contents = nil
