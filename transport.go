@@ -469,11 +469,11 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 	// CRC
 	sendCrc := crc32.Checksum(b, crcTable)
 
-	// Retries
+	// Retries (entire connection pool + 1 more)
 	var responseBytes []byte = nil
 	var errb error
 outer:
-	for i := 0; i < 2; i++ {
+	for i := 0; i < this.connectionPoolSize+1; i++ {
 		// Retry?
 		if i != 0 {
 			log.Warnf("Retrying _send of %s to %s", this.serviceName, node)

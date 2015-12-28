@@ -139,6 +139,9 @@ func (this *Shard) Persist() {
 		return
 	}
 
+	// Make sure is loaded
+	this.Load()
+
 	// Make sure block folder is prepared
 	this.Block().PrepareFolder()
 
@@ -273,6 +276,9 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	// Validate CRC
 	readCrc := crc32.Checksum(fileBytes, crcTable)
 	if readCrc != meta.Checksum {
+		if meta.Size < 1024 {
+			log.Errorf("File bytes with wrong CRC: %v %s", fileBytes, string(fileBytes))
+		}
 		return nil, errors.New(fmt.Sprintf("CRC checksum mismatch, was %d (len %d) expected %d (len %d)", readCrc, len(fileBytes), meta.Checksum, meta.Size)), false
 	}
 
