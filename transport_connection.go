@@ -32,7 +32,9 @@ func (this *TransportConnection) AttachProfiler(p *PerformanceProfilerMeasuremen
 }
 
 func (this *TransportConnection) Close() {
-	log.Infof("Closing transport connection to %s", this.node)
+	if this.pool.Transport.traceLog {
+		log.Infof("Closing transport connection to %s", this.node)
+	}
 	if this.conn != nil {
 		(*this.conn).Close()
 		this.conn = nil
@@ -55,7 +57,9 @@ func (this *TransportConnection) Connect() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		log.Infof("Connected to %s", this.node)
+		if this.pool.Transport.traceLog {
+			log.Infof("Connected to %s", this.node)
+		}
 
 		// Yay!
 		this.conn = &conn

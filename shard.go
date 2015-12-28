@@ -214,6 +214,7 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	this.contentsMux.RLock()
 	if this.contents != nil {
 		defer this.contentsMux.RUnlock()
+		log.Infof("Reading file at %d until %d from %s", meta.StartOffset, meta.StartOffset+meta.Size, this.IdStr())
 		return this.contents.Bytes()[meta.StartOffset : meta.StartOffset+meta.Size], nil, true
 	}
 	this.contentsMux.RUnlock()

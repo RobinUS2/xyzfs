@@ -251,7 +251,15 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			lenReader := bytes.NewReader(lenBuf)
 			lenErr := binary.Read(lenReader, binary.BigEndian, &contentLength)
 			panicErr(lenErr)
-			log.Infof("Content length %d", contentLength)
+
+			// Validate buffer size
+			if int(contentLength) > this.receiveBufferLen {
+				panic(fmt.Sprintf("Content length %d exteeds maximum receive read buffer %d in %s", contentLength, this.receiveBufferLen, this.serviceName))
+			}
+
+			if this.traceLog {
+				log.Infof("Content length %d", contentLength)
+			}
 
 			// Create content buffer
 			dataBuffer = make([]byte, contentLength)
@@ -443,6 +451,19 @@ func (this *NetworkTransport) _discardConnection(node string, tc *TransportConne
 
 // Send message
 func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
+	// Conection holder
+	var tc *TransportConnection
+
+	// Recover from panics in TCP layer
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered unexpected error in _send of %s: %s", this.serviceName, r)
+			// Return connection
+			if tc != nil {
+				this._returnConnection(node, tc)
+			}
+		}
+	}()
 
 	// Compress
 	bc, ce := this._compress(b)
@@ -463,7 +484,7 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 		}
 
 		// Get connection
-		tc := this._getConnection(node)
+		tc = this._getConnection(node)
 
 		// Get socket
 		conn := tc.Conn()

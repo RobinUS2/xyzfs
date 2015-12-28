@@ -46,7 +46,9 @@ func (this *TransportConnectionPool) GetConnection() *TransportConnection {
 func (this *TransportConnectionPool) ReturnConnection(tc *TransportConnection) {
 	// Closed?
 	if this.Closed {
-		log.Infof("Pool %s received returned %s, closing now", this.Transport.serviceName, tc.id)
+		if this.Transport.traceLog {
+			log.Infof("Pool %s received returned %s, closing now", this.Transport.serviceName, tc.id)
+		}
 		tc.Close()
 		return
 	}
@@ -76,7 +78,9 @@ func (this *TransportConnectionPool) DiscardConnection(tc *TransportConnection) 
 	tc.profilerMeasurement.Error()
 
 	// Log discard
-	log.Infof("Pool %s received discarded %s", this.Transport.serviceName, tc.id)
+	if this.Transport.traceLog {
+		log.Infof("Pool %s received discarded %s", this.Transport.serviceName, tc.id)
+	}
 
 	// Open new one
 	go this._addConnection()
@@ -113,14 +117,18 @@ func (this *TransportConnectionPool) _addConnection() {
 		return
 	}
 	tc := this._newConnection()
-	log.Infof("Pool %s added %s to %s", this.Transport.serviceName, tc.id, this.Node)
+	if this.Transport.traceLog {
+		log.Infof("Pool %s added %s to %s", this.Transport.serviceName, tc.id, this.Node)
+	}
 	this.Chan <- tc
 }
 
 // New connection
 func (this *TransportConnectionPool) _newConnection() *TransportConnection {
 	tc := newTransportConnection(this)
-	log.Infof("Pool %s created %s", this.Transport.serviceName, tc.id)
+	if this.Transport.traceLog {
+		log.Infof("Pool %s created %s", this.Transport.serviceName, tc.id)
+	}
 	tc.Connect()
 	return tc
 }

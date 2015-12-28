@@ -93,6 +93,11 @@ func (this *Datastore) LocalShardByIdStr(id string) *Shard {
 func (this *Datastore) AllocateShardCapacity(fileMeta *FileMeta) *Shard {
 	for _, volume := range this.Volumes() {
 		for _, shard := range volume.Shards() {
+			// Ignore parity shards
+			if shard.Parity {
+				continue
+			}
+
 			// Allocate capacity
 			if shard.AllocateCapacity(fileMeta.Size) {
 				return shard
