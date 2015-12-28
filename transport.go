@@ -460,7 +460,7 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 			log.Errorf("Recovered unexpected error in _send of %s: %s", this.serviceName, r)
 			// Return connection
 			if tc != nil {
-				this._returnConnection(node, tc)
+				this._discardConnection(node, tc)
 			}
 		}
 	}()
