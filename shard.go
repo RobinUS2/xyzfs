@@ -234,11 +234,11 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 	}
 
 	// Support reading from this.Contents() in-memory buffer (E.g. during writes on this shard)
-	log.Infof("Contents on read file %v", this.contents)
+	// log.Infof("Contents on read file %v", this.contents)
 	this.contentsMux.RLock()
 	if this.contents != nil {
 		defer this.contentsMux.RUnlock()
-		log.Infof("Reading file at %d until %d from %s", meta.StartOffset, meta.StartOffset+meta.Size, this.IdStr())
+		// log.Infof("Reading file at %d until %d from %s", meta.StartOffset, meta.StartOffset+meta.Size, this.IdStr())
 		return this.contents.Bytes()[meta.StartOffset : meta.StartOffset+meta.Size], nil, true
 	}
 	this.contentsMux.RUnlock()

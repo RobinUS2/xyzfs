@@ -46,7 +46,7 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 		fileBytes, fileReadErr, _ = shard.ReadFile(file)
 		if fileReadErr == nil {
-			log.Infof("Read local file bytes: %v", fileBytes)
+			// log.Infof("Read local file bytes: %v", fileBytes)
 			break
 		} else {
 			log.Warnf("Failed to read local file %s: %s", file, fileReadErr)

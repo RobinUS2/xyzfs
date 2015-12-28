@@ -113,8 +113,8 @@ outer:
 			}
 
 			// @todo forward headers
-			log.Infof("%s", uri)
-			log.Infof("Body %v", body)
+			// log.Infof("%s", uri)
+			// log.Infof("Body %v", body)
 
 			// Output body
 			w.Write(body)
