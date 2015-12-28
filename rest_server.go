@@ -27,6 +27,11 @@ func (this *RestServer) notAuthorized(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 }
 
+// Not found
+func (this *RestServer) notFound(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+}
+
 // Start
 func (this *RestServer) start() {
 	go func() {

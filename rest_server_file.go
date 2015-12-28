@@ -81,6 +81,7 @@ func GetFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Locate
 	res, _, e := datastore.LocateFile(file)
 	if e != nil {
+		restServer.notFound(w)
 		jr.Error(fmt.Sprintf("%s", e))
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 		return
@@ -133,6 +134,7 @@ outer:
 
 	// Did we find?
 	if found == false {
+		restServer.notFound(w)
 		jr.Error("File not found")
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 		return

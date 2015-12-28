@@ -31,6 +31,7 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Locate
 	indices, _, e := datastore.LocateFile(file)
 	if e != nil {
+		restServer.notFound(w)
 		jr.Error(fmt.Sprintf("%s", e))
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 		return
@@ -55,6 +56,7 @@ func GetLocalFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// Did we read?
 	if fileBytes == nil {
+		restServer.notFound(w)
 		jr.Error("Unable to read file locally")
 		fmt.Fprint(w, jr.ToString(restServer.PrettyPrint))
 		return
