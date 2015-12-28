@@ -74,7 +74,7 @@ func (this *FileLocator) _locate(datastore *Datastore, fullName string) ([]*Shar
 // Load index
 func (this *FileLocator) LoadIndex(node string, shardId []byte, idx *ShardIndex) {
 	// Ignore local shards
-	if node == runtime.GetNode() {
+	if node == runtime.GetNode() || gossip.GetNodeState(node).GetRuntimeId() == runtime.Id {
 		log.Debug("Ignore local shard, not registering as remote shard")
 		return
 	}

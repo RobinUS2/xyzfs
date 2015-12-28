@@ -30,7 +30,7 @@ func (this *NodeRouter) PickNode(criteria *NodeRouterCriteria) (string, error) {
 
 		// Recent gossipped only
 		ts := unixTsUint32()
-		minTs := ts - 10
+		minTs := ts - 60
 		if inputNode.GetLastHelloReceived() < minTs || inputNode.GetLastHelloSent() < minTs {
 			log.Warnf("Ignoring node %s for last gossip (now %d, min ts %d, received %d, sent %d)", inputNode.Node, ts, minTs, inputNode.GetLastHelloReceived(), inputNode.GetLastHelloSent())
 			continue

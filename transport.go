@@ -472,7 +472,8 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 	// Retries
 	var responseBytes []byte = nil
 	var errb error
-	for i := 0; i < 1; i++ {
+outer:
+	for i := 0; i < 2; i++ {
 		// Retry?
 		if i != 0 {
 			log.Warnf("Retrying _send of %s to %s", this.serviceName, node)
@@ -544,13 +545,27 @@ func (this *NetworkTransport) _send(node string, b []byte) ([]byte, error) {
 				// Read content length
 				lenBuf := make([]byte, 4)
 				lenBufRead, lenReadErr := conn.Read(lenBuf)
-				panicErr(lenReadErr)
+				if lenReadErr != nil {
+					log.Warnf("Unable to read length bytes in _send response: %s", lenReadErr)
+					// Discard connection and retry
+					this._discardConnection(node, tc)
+					continue outer
+				}
 				if lenBufRead != len(lenBuf) {
-					panic("Not enough bytes read for content length")
+					log.Warn("Not enough bytes read for content length")
+					// Discard connection and retry
+					this._discardConnection(node, tc)
+					continue outer
 				}
 				lenReader := bytes.NewReader(lenBuf)
 				lenErr := binary.Read(lenReader, binary.BigEndian, &contentLength)
-				panicErr(lenErr)
+				if lenErr != nil {
+					log.Warnf("Unable to read length uint32 in _send response: %s", lenErr)
+
+					// Discard connection and retry
+					this._discardConnection(node, tc)
+					continue outer
+				}
 				// log.Infof("Content length %d", contentLength)
 
 				// Create content buffer
