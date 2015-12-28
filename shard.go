@@ -202,6 +202,11 @@ func (this *Shard) SetContents(b *bytes.Buffer) {
 // Read file bytes
 // file bytes - read error - from memory
 func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
+	// Only on data shards
+	if this.Parity {
+		panic("Can not read file directly for parity shard")
+	}
+
 	// Get meta
 	meta := this.shardFileMeta.GetByName(filename)
 
@@ -257,6 +262,11 @@ func (this *Shard) ReadFile(filename string) ([]byte, error, bool) {
 
 // Add file
 func (this *Shard) AddFile(f *FileMeta, b []byte) (*FileMeta, error) {
+	// Only on data shards
+	if this.Parity {
+		panic("Can not add file to parity shard")
+	}
+
 	// Validate mode
 	this.bufferModeMux.Lock()
 	if this.bufferMode == ReadShardBufferMode {
