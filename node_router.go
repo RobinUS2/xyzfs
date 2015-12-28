@@ -25,19 +25,26 @@ func (this *NodeRouter) PickNode(criteria *NodeRouterCriteria) (string, error) {
 	}
 
 	// Apply criteria
-	if criteria != nil {
-		tmp := make([]*GossipNodeState, 0)
-		for _, inputNode := range inputNodes {
-			// Local route?
-			if criteria.ExcludeLocalNodes {
-				if inputNode.Node == runtime.GetNode() || inputNode.Node == "localhost" || inputNode.Node == "127.0.0.1" {
-					continue
-				}
-			}
-			tmp = append(tmp, inputNode)
+	tmp := make([]*GossipNodeState, 0)
+	for _, inputNode := range inputNodes {
+
+		// Recent gossipped only
+		ts := unixTsUint32()
+		minTs := ts - 10
+		if inputNode.GetLastHelloReceived() < minTs || inputNode.GetLastHelloSent() < minTs {
+			log.Warnf("Ignoring node %s for last gossip (now %d, min ts %d, received %d, sent %d)", inputNode.Node, ts, minTs, inputNode.GetLastHelloReceived(), inputNode.GetLastHelloSent())
+			continue
 		}
-		inputNodes = tmp
+
+		// Local route?
+		if criteria != nil && criteria.ExcludeLocalNodes {
+			if inputNode.Node == runtime.GetNode() || inputNode.Node == "localhost" || inputNode.Node == "127.0.0.1" {
+				continue
+			}
+		}
+		tmp = append(tmp, inputNode)
 	}
+	inputNodes = tmp
 
 	// Anything left after filtering?
 	if len(inputNodes) < 1 {

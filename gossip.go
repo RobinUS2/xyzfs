@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"sync"
 	"time"
 )
@@ -125,6 +126,12 @@ func newGossip() *Gossip {
 				s := &PerformanceProfilerStats{
 					AvgSuccessMs: (s1.AvgSuccessMs + s2.AvgSuccessMs) / 2,
 					AvgErrorMs:   (s1.AvgErrorMs + s2.AvgErrorMs) / 2,
+				}
+				if math.IsNaN(s.AvgSuccessMs) {
+					s.AvgSuccessMs = 0.0
+				}
+				if math.IsNaN(s.AvgErrorMs) {
+					s.AvgErrorMs = 0.0
 				}
 				g.GetNodeState(tcp.Node).SetStats(s)
 			}

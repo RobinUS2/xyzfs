@@ -50,7 +50,7 @@ func (this *FileMeta) FromBytes(b []byte) {
 	panicErr(err)
 
 	// Read actual name
-	nameBytes := make([]byte, nameLen)
+	nameBytes := allocByteArr(nameLen, 1024)
 	nameBytesRead, _ := buf.Read(nameBytes)
 	if uint32(nameBytesRead) != nameLen {
 		panic(fmt.Sprintf("Name bytes read mismatch: %v", b))

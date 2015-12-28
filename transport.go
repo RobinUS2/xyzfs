@@ -252,17 +252,12 @@ func (this *NetworkTransport) handleConnection(conn net.Conn) {
 			lenErr := binary.Read(lenReader, binary.BigEndian, &contentLength)
 			panicErr(lenErr)
 
-			// Validate buffer size
-			if int(contentLength) > this.receiveBufferLen {
-				panic(fmt.Sprintf("Content length %d exteeds maximum receive read buffer %d in %s", contentLength, this.receiveBufferLen, this.serviceName))
-			}
-
 			if this.traceLog {
 				log.Infof("Content length %d", contentLength)
 			}
 
 			// Create content buffer
-			dataBuffer = make([]byte, contentLength)
+			dataBuffer = allocByteArr(contentLength, uint32(this.receiveBufferLen))
 		} else {
 			// Read content
 			var dataReadError error

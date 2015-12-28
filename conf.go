@@ -59,7 +59,7 @@ func newConf() *Conf {
 		VolumeBasePath: "/xyzfs/data",
 
 		// Gossip
-		GossipHelloInterval:       5,
+		GossipHelloInterval:       1,
 		GossipTransportReadBuffer: 8 * 1024,
 		GossipTransportNumStreams: 2,
 
