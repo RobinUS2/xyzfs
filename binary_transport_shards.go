@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"sync"
 )
 
 // Binary transport of shards to other nodes
@@ -9,19 +10,31 @@ import (
 // Send shards
 func (this *BinaryTransport) _sendShardIndices(node string) {
 	log.Infof("Sending local shard indices to %s", node)
+	var wg sync.WaitGroup
 	for _, volume := range datastore.Volumes() {
 		for _, shard := range volume.Shards() {
-			go this._sendShardIndex(shard, node)
+			wg.Add(1)
+			go func(shard *Shard) {
+				this._sendShardIndex(shard, node)
+				wg.Done()
+			}(shard)
 		}
 	}
+	wg.Wait()
 }
 
 // Broadcast single shard index
 func (this *BinaryTransport) _broadcastShardIndex(shard *Shard) {
 	// To all nodes
+	var wg sync.WaitGroup
 	for _, ns := range gossip.GetNodeStates() {
-		go this._sendShardIndex(shard, ns.Node)
+		wg.Add(1)
+		go func(ns *GossipNodeState) {
+			this._sendShardIndex(shard, ns.Node)
+			wg.Done()
+		}(ns)
 	}
+	wg.Wait()
 }
 
 // Send single shard
